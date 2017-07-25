@@ -296,105 +296,78 @@ router.post('/recipient/create_account/:id', function(req, res) {
 
 router.post('/recipient/add_loan/:id', function(req, res) {
 
-    /// get recipient db from id params
-    var recipient_user;
-    Recipientschema.get({ id: req.params.id }, function(err, user) {
-        if (!user) {
-            res.json({ "success": false, "msg": "No Register" });
+/// get recipient db from id params
+console.log('req.params.id');
+console.log(req.params.id);
+Recipientschema.get({ id: req.params.id }, function(err, db_user) {
+if (err) {
+    res.json({ "success": false, "msg": "No Register" });
+} else {
+    recipient_user = user;
+    console.log(recipient_user.synapse_user_id + "\n");
+}
+
+console.log(authResponse.accounts);
+var numbers = authResponse.numbers;
+for (var i = 0; i < numbers.length; i++) {
+    if (numbers[i].account_id === account_id)
+        var selected_number = numbers[i];
+}
+console.log(selected_number);
+var ach_Node = {
+    type: 'ACH-US',
+    info: {
+        nickname: 'Node Library Checking Account',
+        name_on_account: 'Node Library',
+        account_num: '72347235423',
+        routing_num: '051000017',
+        type: 'PERSONAL',
+        class: 'CHECKING'
+    },
+    extra: {
+        supp_id: '122eddfgbeafrfvbbb'
+    }
+};
+
+///get synapse useraccount from id of user dynamodb  
+console.log("synapse");
+let options = {
+    _id: db_user.synapse_user_id,
+    fingerprint: Helpers.fingerprint,
+    ip_address: '127.0.0.1',
+    full_dehydrate: 'yes' //optional
+};
+let node_user;
+Users.get(
+    Helpers.client,
+    options,
+    function(errResp, userResponse) {
+        // error or user object
+
+        if (errResp) {
+            res.json("user err");
         } else {
-            recipient_user = user;
-            console.log(recipient_user.synapse_user_id + "\n");
-        }
-
-    });
-    //// get plaid accunt from publick_token 
-    PUBLIC_TOKEN = req.body.public_token;
-    var account_id = req.body.account_id;
-    console.log(PUBLIC_TOKEN);
-    plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
-        if (error != null) {
-            var msg = 'Could not exchange public_token!';
-            console.log(msg + '\n' + error);
-            return res.json({ "success": false, "msg": "Error" });
-        }
-        ACCESS_TOKEN = tokenResponse.access_token;
-        ITEM_ID = tokenResponse.item_id;
-        console.log('Access Token: ' + ACCESS_TOKEN);
-        console.log('Item ID: ' + ITEM_ID);
-
-        plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
-            if (error != null) {
-                var msg = 'Unable to pull accounts from the Plaid API.';
-                console.log(msg + '\n' + error);
-                return res.json({ "success": false, "msg": "Error" });
-            }
-
-            console.log(authResponse.accounts);
-            var numbers = authResponse.numbers;
-            for (var i = 0; i < numbers.length; i++) {
-                if (numbers[i].account_id === account_id)
-                    var selected_number = numbers[i];
-            }
-            console.log(selected_number);
-            var ach_Node = {
-                type: 'ACH-US',
-                info: {
-                    nickname: 'Node Library Checking Account',
-                    name_on_account: 'Node Library',
-                    account_num: '72347235423',
-                    routing_num: '051000017',
-                    type: 'PERSONAL',
-                    class: 'CHECKING'
-                },
-                extra: {
-                    supp_id: '122eddfgbeafrfvbbb'
+            node_user = userResponse;
+            Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
+                if (err) {
+                    return res.json();
+                } else {
+                    Recipientschema.update({ id: db_user.id }, { loans: nodesResponse }, function(err) {
+                        if (err) { return res.json(); }
+                        console.log("Add loans");
+                        res.json({ "success": true, "msg": "Success" });
+                    })
                 }
-            };
+            });
+        }
 
-            ///get synapse useraccount from id of user dynamodb  
-            console.log("synapse");
-            let options = {
-                _id: recipient_user["synapse_user_id"],
-                fingerprint: Helpers.fingerprint,
-                ip_address: '127.0.0.1',
-                full_dehydrate: 'yes' //optional
-            };
-            let node_user;
-            Users.get(
-                Helpers.client,
-                options,
-                function(errResp, userResponse) {
-                    // error or user object
-
-                    if (errResp) {
-                        res.json("user err");
-                    } else {
-                        node_user = userResponse;
-                        Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
-                            if (err) {
-                                return res.json();
-                            } else {
-                                Recipientschema.update({ id: recipient_user.id }, { loans: nodesResponse }, function(err) {
-                                    if (err) { return res.json(); }
-                                    console.log("Add loans");
-                                    res.json({ "success": true, "msg": "Success" });
-                                })
-                            }
-                        });
-                    }
-
-                });
-
-            /*response.json({
-            error: false,
-            accounts: authResponse.accounts,
-            numbers: authResponse.numbers,
-    });*/
-        });
-        res.json({
-            'error': false
-        });
     });
+});
+});
+}
+
+});
+
 });
 
 router.get('/profile/:id', function(req, res) {
