@@ -1,5 +1,5 @@
 var dynamoose = require('dynamoose');
-dynamoose.AWS.config.loadFromPath('./config.json');
+dynamoose.AWS.config.loadFromPath('config.json');
 
 var Schema = dynamoose.Schema;
 

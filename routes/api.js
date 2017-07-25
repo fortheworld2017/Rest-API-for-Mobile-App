@@ -151,16 +151,26 @@ router.get('/nodes/:id', function(req, res) {
 
 router.post('/test', function(req, res) {
 
-    var obj1 = [{ id: 1, node: { id: 1, name: 2 } }];
-    var obj2 = { id: 2, node: { id: 2, name: 3 } };
-    var obj = []
-    obj1.push(obj2);
-    Recipientschema.get({ id: '1500827023939' }, function(err, nodes) {
-            if (err) { return console.log(err); }
-            nodes.loans.push(obj2);
-            res.json(nodes.loans);
-        })
-        //obj.push(obj2);
+    /* var obj1 = [{ id: 1, node: { id: 1, name: 2 } }];
+     var obj2 = { id: 2, node: { id: 2, name: 3 } };
+     var obj = []
+     obj1.push(obj2);
+     Recipientschema.get({ id: '1500827023939' }, function(err, nodes) {
+             if (err) { return console.log(err); }
+             nodes.loans.push(obj2);
+             res.json(nodes.loans);
+         })
+         //obj.push(obj2);*/
+    var recipient_user;
+    Recipientschema.get({ id: '1500827023939' }, function(err, user) {
+        if (!user) {
+            res.json({ "success": false, "msg": "No Register" });
+        } else {
+            recipient_user = user;
+            console.log(recipient_user.synapse_user_id + "\n");
+        }
+
+    });
 
 });
 
@@ -293,7 +303,7 @@ router.post('/recipient/add_loan/:id', function(req, res) {
             res.json({ "success": false, "msg": "No Register" });
         } else {
             recipient_user = user;
-            console.log(recipient_user["synapse_user_id"] + "\n");
+            console.log(recipient_user.synapse_user_id + "\n");
         }
 
     });
