@@ -183,7 +183,11 @@ router.post('/signin', function(req, res) {
                 res.json({ "success": false, "msg": "No Register" });
             } else {
                 if (req.body.password == user.password) {
-                    res.json({ "success": true, "msg": "login success", "user_id": user.user_id, "has_account": user.has_account, "user_type": user.user_type });
+                    res.json({
+                        "success": true,
+                        "msg": "login success",
+                        "user": user
+                    });
                 } else {
                     res.json({ "success": false, "msg": "Invalid password" });
                 }
@@ -203,7 +207,7 @@ router.post('/recipient/signup', function(req, res) {
             user_id: id,
             password: req.body.password,
             user_type: 'recipient',
-            has_account: false
+            // has_account: false
         });
         register_user.save({
             condition: '#o <> :email',
@@ -296,79 +300,142 @@ router.post('/recipient/create_account/:id', function(req, res) {
 
 router.post('/recipient/add_loan/:id', function(req, res) {
 
-/// get recipient db from id params
-console.log('req.params.id');
-console.log(req.params.id);
-Recipientschema.get({ id: req.params.id }, function(err, db_user) {
-if (err) {
-    res.json({ "success": false, "msg": "No Register" });
-} else {
-    recipient_user = user;
-    console.log(recipient_user.synapse_user_id + "\n");
-}
+    /// get recipient db from id params
 
-console.log(authResponse.accounts);
-var numbers = authResponse.numbers;
-for (var i = 0; i < numbers.length; i++) {
-    if (numbers[i].account_id === account_id)
-        var selected_number = numbers[i];
-}
-console.log(selected_number);
-var ach_Node = {
-    type: 'ACH-US',
-    info: {
-        nickname: 'Node Library Checking Account',
-        name_on_account: 'Node Library',
-        account_num: '72347235423',
-        routing_num: '051000017',
-        type: 'PERSONAL',
-        class: 'CHECKING'
-    },
-    extra: {
-        supp_id: '122eddfgbeafrfvbbb'
-    }
-};
-
-///get synapse useraccount from id of user dynamodb  
-console.log("synapse");
-let options = {
-    _id: db_user.synapse_user_id,
-    fingerprint: Helpers.fingerprint,
-    ip_address: '127.0.0.1',
-    full_dehydrate: 'yes' //optional
-};
-let node_user;
-Users.get(
-    Helpers.client,
-    options,
-    function(errResp, userResponse) {
-        // error or user object
-
-        if (errResp) {
-            res.json("user err");
+    Recipientschema.get({ id: req.params.id }, function(err, db_user) {
+        if (err) {
+            res.json({ "success": false, "msg": "No Register" });
         } else {
-            node_user = userResponse;
-            Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
-                if (err) {
-                    return res.json();
-                } else {
-                    Recipientschema.update({ id: db_user.id }, { loans: nodesResponse }, function(err) {
-                        if (err) { return res.json(); }
-                        console.log("Add loans");
-                        res.json({ "success": true, "msg": "Success" });
-                    })
+            //// get plaid accunt from publick_token 
+            PUBLIC_TOKEN = req.body.public_token;
+            var account_id = req.body.account_id;
+            console.log(PUBLIC_TOKEN);
+            plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
+                if (error != null) {
+                    var msg = 'Could not exchange public_token!';
+                    console.log(msg + '\n' + error);
+                    return res.json({ "success": false, "msg": "Error" });
                 }
+                ACCESS_TOKEN = tokenResponse.access_token;
+                ITEM_ID = tokenResponse.item_id;
+                console.log('Access Token: ' + ACCESS_TOKEN);
+                console.log('Item ID: ' + ITEM_ID);
+
+                plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
+                    if (error != null) {
+                        var msg = 'Unable to pull accounts from the Plaid API.';
+                        console.log(msg + '\n' + error);
+                        return res.json({ "success": false, "msg": "Error" });
+                    }
+
+                    console.log(authResponse.accounts);
+                    var numbers = authResponse.numbers;
+                    for (var i = 0; i < numbers.length; i++) {
+                        if (numbers[i].account_id === account_id)
+                            var selected_number = numbers[i];
+                    }
+
+                    var ach_Node = {
+                        type: 'ACH-US',
+                        info: {
+                            nickname: 'Node Library Checking Account',
+                            name_on_account: 'Node Library',
+                            account_num: '72347235423',
+                            routing_num: '051000017',
+                            type: 'PERSONAL',
+                            class: 'CHECKING'
+                        },
+                        extra: {
+                            supp_id: '122eddfgbeafrfvbbb'
+                        }
+                    };
+
+                    ///get synapse useraccount from id of user dynamodb  
+                    var node_User;
+                    let options = {
+                        _id: db_user.synapse_user_id,
+                        fingerprint: Helpers.fingerprint,
+                        ip_address: '127.0.0.1',
+                        full_dehydrate: 'yes' //optional
+                    };
+                    Users.get(
+                        Helpers.client,
+                        options,
+                        function(errResp, userResponse) {
+                            // error or user object
+
+                            if (errResp) {
+                                res.json("user err");
+                            } else {
+                                node_user = userResponse;
+                                Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
+                                    if (err) {
+                                        return res.json({ "success": true, "msg": "Error" });
+                                    } else {
+
+                                        console.log('nodesResponse[0].json');
+                                        console.log(nodesResponse[0].json);
+                                        console.log('nodesResponse[0].json._id');
+                                        console.log(nodesResponse[0].json._id);
+                                        console.log('nodesResponse[0].json.info.bank_long_name');
+                                        console.log(nodesResponse[0].json.info.bank_long_name);
+                                        var node_obj = [];
+                                        node_obj.push(db_user.loans);
+                                        let node_options_new = {
+                                            node_id: nodesResponse[0].json._id,
+                                            bank_name: nodesResponse[0].json.info.bank_long_name,
+                                            balance: 0,
+                                            access_token: ACCESS_TOKEN
+                                        }
+                                        node_obj.push(node_options_new);
+                                        Recipientschema.update({ id: db_user.id }, { loans: node_obj }, function(err) {
+                                            if (err) { return res.json(); }
+                                            console.log("Add loans");
+                                            res.json({ "success": true, "msg": "Success" });
+                                        })
+                                    }
+                                });
+                            }
+
+                        });
+                });
             });
+
         }
 
     });
-});
-});
-}
 
 });
-
+router.get('/recipient/get_donors/:id', function(req, res) {
+    Recipientschema.get({ id: req.params.id }, function(err, db_user) {
+        if (err) {
+            res.json({ "success": false, "msg": "Error" });
+        } else {
+            res.json({ "success": true, "msg": "Success", "donors": db_user.donors });
+        }
+    });
 });
+
+router.get('/recipient/update_donors/:id', function(req, res) {
+    Recipientschema.get({ id: req.params.id }, function(err, db_user) {
+        if (err) {
+            res.json({ "success": false, "msg": "Error" });
+        } else {
+            res.json({ "success": true, "msg": "Success", "donors": db_user.donors });
+        }
+    });
+});
+
+router.get('/recipient/get_loans/:id', function(req, res) {
+    Recipientschema.get({ id: req.params.id }, function(err, db_user) {
+        if (err) {
+            res.json({ "success": false, "msg": "Error" });
+        } else {
+            res.json({ "success": true, "msg": "Success", "donors": db_user.loans });
+        }
+    });
+});
+
 
 router.get('/profile/:id', function(req, res) {
     res.json(req.params.id);
@@ -415,7 +482,7 @@ router.post('/donor/signup', function(req, res) {
             user_id: id,
             password: req.body.password,
             user_type: 'donor',
-            has_account: false
+            // has_account: false
         });
         register_user.save({
             condition: '#o <> :email',
@@ -434,6 +501,7 @@ router.post('/donor/signup', function(req, res) {
 });
 
 router.post('/donor/create_account/:id', function(req, res) {
+    console.log(req.body);
     if (req.body.email && req.body.name) {
         Userschema.get({ email: req.body.email }, function(err, db_user) {
             if (!db_user) {
@@ -469,7 +537,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                 if (err) {
                                     res.json(err);
                                 } else {
-                                    var recipient = new Recipientschema({
+                                    var donor = new Donorschema({
                                         id: req.params.id,
                                         email: req.body.email,
                                         name: req.body.name,
@@ -480,7 +548,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                         zip: req.body.zip,
                                         synapse_user_id: synapse_user.json._id
                                     })
-                                    recipient.save(function(err) {
+                                    donor.save(function(err) {
                                         if (err) { return console.log(err); } else {
                                             Userschema.update({ email: req.body.email }, { has_account: true }, function(err) {
                                                 if (err) { return console.log(err) }
@@ -505,6 +573,139 @@ router.post('/donor/create_account/:id', function(req, res) {
         res.json({ "success": false, "msg": "Invalid input" });
     }
 });
+router.post('/donor/bank/:id', function(req, res) {
+
+    /// get donor db from id params
+
+    Donorschema.get({ id: req.params.id }, function(err, db_user) {
+        if (err) {
+            res.json({ "success": false, "msg": "No Register" });
+        } else {
+            //// get plaid accunt from publick_token 
+            PUBLIC_TOKEN = req.body.public_token;
+            var account_id = req.body.account_id;
+            console.log(PUBLIC_TOKEN);
+            plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
+                if (error != null) {
+                    var msg = 'Could not exchange public_token!';
+                    console.log(msg + '\n' + error);
+                    return res.json({ "success": false, "msg": "Error" });
+                }
+                ACCESS_TOKEN = tokenResponse.access_token;
+                ITEM_ID = tokenResponse.item_id;
+                console.log('Access Token: ' + ACCESS_TOKEN);
+                console.log('Item ID: ' + ITEM_ID);
+
+                plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
+                    if (error != null) {
+                        var msg = 'Unable to pull accounts from the Plaid API.';
+                        console.log(msg + '\n' + error);
+                        return res.json({ "success": false, "msg": "Error" });
+                    }
+
+                    console.log(authResponse.accounts);
+                    var numbers = authResponse.numbers;
+                    var selected_number;
+                    for (var i = 0; i < numbers.length; i++) {
+                        if (numbers[i].account_id === account_id)
+                            selected_number = numbers[i];
+                    }
+                    console.log(selected_number);
+                    var ach_Node = {
+                        type: 'ACH-US',
+                        info: {
+                            nickname: 'Node Library Checking Account',
+                            name_on_account: 'Node Library',
+                            account_num: selected_number.account,
+                            routing_num: selected_number.routing,
+                            type: 'PERSONAL',
+                            class: 'CHECKING'
+                        },
+                        extra: {
+                            supp_id: '122eddfgbeafrfvbbb'
+                        }
+                    };
+
+                    ///get synapse useraccount from id of user dynamodb  
+                    var node_User;
+                    let options = {
+                        _id: db_user.synapse_user_id,
+                        fingerprint: Helpers.fingerprint,
+                        ip_address: '127.0.0.1',
+                        full_dehydrate: 'yes' //optional
+                    };
+                    Users.get(
+                        Helpers.client,
+                        options,
+                        function(errResp, userResponse) {
+                            // error or user object
+
+                            if (errResp) {
+                                res.json("user err");
+                            } else {
+                                node_user = userResponse;
+                                Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
+                                    if (err) {
+                                        return res.json({ "success": true, "msg": "Error" });
+                                    } else {
+
+                                        console.log('nodesResponse[0].json');
+                                        console.log(nodesResponse[0].json);
+                                        console.log('nodesResponse[0].json._id');
+                                        console.log(nodesResponse[0].json._id);
+                                        console.log('nodesResponse[0].json.info.bank_long_name');
+                                        console.log(nodesResponse[0].json.info.bank_long_name);
+                                        db_user.bank_name = nodesResponse[0].json.info.bank_long_name;
+                                        db_user.node_id = nodesResponse[0].json._id;
+                                        db_user.access_token = ACCESS_TOKEN;
+                                        // var donor_user = new Donorschema({
+                                        //     id: db_user.id,
+                                        //     email: db_user.email,
+                                        //     name: db_user.name,
+                                        //     birthday: db_user.birthday,
+                                        //     address: db_user.address,
+                                        //     city: db_user.city,
+                                        //     state: db_user.state,
+                                        //     zip: db_user.zip,
+                                        //     synapse_user_id: db_user.synapse_user_id,
+                                        //     bank_name: nodesResponse[0].json.info.bank_long_name,
+                                        //     node_id: nodesResponse[0].json._id,
+                                        //     access_token: ACCESS_TOKEN
+                                        // });
+                                        db_user.save(function(err) {
+                                            if (err) {
+                                                console.log(err);
+                                                return res.json({ "success": false, "msg": "Error" });
+                                            }
+                                            Userschema.update({ email: db_user.email }, { has_bank: true }, function(err) {
+                                                if (err) { return console.log(err) }
+                                                console.log("Added Donor Bank");
+                                                res.json({ "success": true, "msg": "Success" });
+                                            })
+
+                                        });
+                                        // Donorschema.update({ id: db_user.id }, {
+                                        //     bank_name: nodesResponse[0].json.info.bank_long_name,
+                                        //     access_token: ACCESS_TOKEN,
+                                        //     node_id: nodesResponse[0].json._id
+                                        // }, function(err) {
+                                        //     if (err) { return res.json(); }
+                                        //     console.log("Added Donor Bank");
+                                        //     res.json({ "success": true, "msg": "Success" });
+                                        // })
+                                    }
+                                });
+                            }
+
+                        });
+                });
+            });
+
+        }
+
+    });
+
+})
 module.exports = router;
 /*
 function getUser(userID){

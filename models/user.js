@@ -1,5 +1,5 @@
 var dynamoose = require('dynamoose');
-dynamoose.AWS.config.loadFromPath('config.json');
+dynamoose.AWS.config.loadFromPath('./config.json');
 
 var Schema = dynamoose.Schema;
 
@@ -20,7 +20,12 @@ var userSchema = new Schema({
         type: String
     },
     has_account: {
-        type: Boolean
+        type: Boolean,
+        default: false
+    },
+    has_bank: {
+        type: Boolean,
+        default: false
     }
 }, {
     throughput: { read: 15, write: 5 }

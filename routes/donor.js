@@ -17,6 +17,21 @@ var donorSchema = new Schema({
         type: String,
         required: true
     },
+    birthday: {
+        type: String
+    },
+    address: {
+        type: String
+    },
+    city: {
+        type: String
+    },
+    state: {
+        type: String
+    },
+    zip: {
+        type: String
+    },
     synapse_user_id: {
         type: String
     },
@@ -35,6 +50,7 @@ var donorSchema = new Schema({
     recipients: {
         type: Object
     }
+
 }, {
     throughput: { read: 15, write: 5 }
 });

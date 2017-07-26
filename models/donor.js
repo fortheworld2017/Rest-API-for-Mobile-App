@@ -1,5 +1,5 @@
 var dynamoose = require('dynamoose');
-dynamoose.AWS.config.loadFromPath('config.json');
+dynamoose.AWS.config.loadFromPath('./config.json');
 
 var Schema = dynamoose.Schema;
 
@@ -17,11 +17,27 @@ var donorSchema = new Schema({
         type: String,
         required: true
     },
+
+    birthday: {
+        type: String
+    },
+    address: {
+        type: String
+    },
+    city: {
+        type: String
+    },
+    state: {
+        type: String
+    },
+    zip: {
+        type: String
+    },
     synapse_user_id: {
         type: String
     },
     bank_name: {
-        type: [String]
+        type: String
     },
     node_id: {
         type: String
