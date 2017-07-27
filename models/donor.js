@@ -9,10 +9,6 @@ var donorSchema = new Schema({
         required: true,
         hashKey: true
     },
-    phone: {
-        type: String,
-        required: true
-    },
     email: {
         type: String,
         required: true
@@ -21,7 +17,10 @@ var donorSchema = new Schema({
         type: String,
         required: true
     },
-
+    phone: {
+        type: String,
+        required: true
+    },
     birthday: {
         type: String
     },
@@ -46,6 +45,9 @@ var donorSchema = new Schema({
     node_id: {
         type: String
     },
+    account_id: {
+        type: String
+    },
     access_token: {
         type: String
     },
@@ -56,7 +58,7 @@ var donorSchema = new Schema({
         type: Object
     }
 }, {
-    throughput: { read: 15, write: 5 }
+    throughput: { read: 15, write: 10 }
 });
 
 module.exports = dynamoose.model('Donor', donorSchema);

@@ -9,15 +9,15 @@ var recipientSchema = new Schema({
         required: true,
         hashKey: true
     },
-    phone: {
-        type: String,
-        required: true
-    },
     email: {
         type: String,
         required: true
     },
     name: {
+        type: String,
+        required: true
+    },
+    phone: {
         type: String,
         required: true
     },
