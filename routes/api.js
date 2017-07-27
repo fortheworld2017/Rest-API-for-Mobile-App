@@ -1097,7 +1097,7 @@ router.get('/donor/get_recipients/:id', function(req, res) {
         if (!donor) {
             return res.json({ "success": false, "msg": "Invalid User ID" });
         } else {
-            return res.json({ "success": true, "msg": "success", "recipients": donor.recipients });
+            return res.json({ "success": true, "msg": "success", "recipients": donor.recipients, "next_payment": donor.next_payment });
         }
     });
 });
