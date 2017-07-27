@@ -948,20 +948,3 @@ router.post('/transactions/:id', function(req, res) {
     });
 });
 module.exports = router;
-/*
-function getUser(userID){
-   let options = {
-            ip_address: Helpers.ip_address,
-            page: '', //optional
-            per_page: '', //optional
-            query: '' //optional
-        };console.log(userID);
-        Users.get(
-        Helpers.client,
-        options,
-        function(err, usersResponse) {
-            // error or array of user objects
-           return usersResponse;
-        });
-    
-}*/
