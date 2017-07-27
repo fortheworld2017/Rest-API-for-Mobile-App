@@ -178,8 +178,6 @@ router.post('/test', function(req, res) {
 
 });
 
-
-
 router.post('/profile/:id', function(req, res) {
     if (req.body.name) {
         var create_profile = new Profileschema({
@@ -208,8 +206,9 @@ router.post('/profile/:id', function(req, res) {
     }
 
 });
+
 router.get('/', function(req, res) {
-    res.json('API RUNNING');
+    res.json({ 'result': 'API RUNNING' });
 });
 
 
@@ -347,6 +346,7 @@ router.post('/recipient/create_account/:id', function(req, res) {
         res.json({ "success": false, "msg": "Invalid Parameter" });
     }
 });
+
 router.get('/recipient/get_profile/:id', function(req, res) {
     Recipientschema.get({ id: req.params.id }, function(err, user_profile) {
         if (err) {
@@ -380,7 +380,6 @@ router.post('/recipient/update_profile/:id', function(req, res) {
 
                 return res.json({ "success": true, "msg": "success" });
             });
-
         }
     });
 });
@@ -600,7 +599,7 @@ router.post('/recipient/get_donor/:id', function(req, res) {
                                 "email": recipient_donor.email,
                                 "loan_bank_name": recipient_loan.bank_name,
                                 "donor_bank_name": donor.bank_name,
-                                "transactions": donor_recipient.transactions,
+                                "count": donor_recipient.count,
                                 "balance": donor_recipient.balance
                             });
                         }
@@ -715,6 +714,7 @@ router.get('/recipient/get_balances/:id', function(req, res) {
                         if (parameters.length < 1) {
                             return res.json({ "success": true, "msg": "No Donors", "loans": loan_balances, "donors": [] });
                         }
+                        console.log(parameters);
                         Userschema.batchGet(parameters, function(err, users) {
                             if (err) {
                                 console.log(err);
@@ -725,23 +725,25 @@ router.get('/recipient/get_balances/:id', function(req, res) {
                             }
                             parameters = [];
                             for (var i = 0; i < users.length; i++) {
-                                parameters.push({ "email": users[i].user_id });
+                                parameters.push({ "id": users[i].user_id });
                             }
+                            console.log(parameters);
                             Donorschema.batchGet(parameters, function(err, donors) {
                                 if (err) {
                                     console.log(err);
                                     return res.json({ "success": false, "msg": err.message });
                                 }
-                                if (!users) {
+                                if (!donors) {
                                     return res.json({ "success": false, "msg": "Invaild Donors" });
                                 }
+                                console.log(donors);
                                 var donor_balances = [];
                                 for (var i = 0; i < donors.length; i++) {
                                     for (var j = 0; j < donors[i].recipients.length; j++) {
                                         if (donors[i].recipients[j].email == recipient.email) {
                                             for (var k = 0; k < recipient.donors.length; k++) {
                                                 if (recipient.donors[k].email == donors[i].email) {
-                                                    donor_balances.push({ "name": recipient.donors[k].name, "balance": donors[i].recipients[j].balance });
+                                                    donor_balances.push({ "email": recipient.donors[k].email, "name": recipient.donors[k].name, "balance": donors[i].recipients[j].balance });
                                                     break;
                                                 }
                                             }
@@ -996,10 +998,8 @@ router.post('/donor/update_profile/:id', function(req, res) {
                 if (err) {
                     return res.json({ "success": false, "msg": err.message });
                 }
-
                 return res.json({ "success": true, "msg": "success" });
             });
-
         }
     });
 });
@@ -1063,13 +1063,14 @@ router.post('/donor/add_recipient/:id', function(req, res) {
         });
     });
 });
-router.post('/donor/change_next/:id', function(req, res) {
+
+router.post('/donor/change_next_payment/:id', function(req, res) {
     Donorschema.get({ id: req.params.id }, function(err, donor) {
         if (err) {
             return res.json({ "success": false, "msg": err.message });
         }
         if (!donor) {
-            return res.json({ "success": false, "msg": "No Registed Donor" });
+            return res.json({ "success": false, "msg": "Invalid User ID" });
         } else {
             for (var i = 0; i < donor.recipients.length; i++) {
                 if (donor.recipients[i].email == req.body.email) {
@@ -1094,19 +1095,20 @@ router.get('/donor/get_recipients/:id', function(req, res) {
             return res.json({ "success": false, "msg": err.message });
         }
         if (!donor) {
-            return res.json({ "success": false, "msg": "No Registed Donor" });
+            return res.json({ "success": false, "msg": "Invalid User ID" });
         } else {
             return res.json({ "success": true, "msg": "success", "recipients": donor.recipients });
         }
     });
 });
+
 router.post('/donor/remove_recipient/:id', function(req, res) {
     Donorschema.get({ id: req.params.id }, function(err, donor) {
         if (err) {
             return res.json({ "success": false, "msg": err.message });
         }
         if (!donor) {
-            return res.json({ "success": false, "msg": "No Registed Donor" });
+            return res.json({ "success": false, "msg": "Invalid User ID" });
         }
         for (var i = 0; i < donor.recipients.length; i++) {
             if (donor.recipients[i].email == req.body.email) {
@@ -1141,12 +1143,11 @@ router.post('/donor/remove_recipient/:id', function(req, res) {
                         return res.json({ "success": true, "msg": "Success" });
                     })
                 })
-
             })
         })
     });
-
 });
+
 router.post('/transactions/:id', function(req, res) {
     Donorschema.get({ id: req.params.id }, function(err, donor_user) {
         if (err) {
