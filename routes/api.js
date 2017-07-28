@@ -1148,6 +1148,19 @@ router.post('/donor/remove_recipient/:id', function(req, res) {
     });
 });
 
+router.post('/donor/get_balances/:id', function(req, res) {
+    Donorschema.get({ id: req.params.id }, function(err, donor) {
+        if (err) {
+            return res.json({ "success": false, "msg": err.message });
+        }
+        if (!donor) {
+            return res.json({ "success": false, "msg": "Invalid User ID" });
+        }
+        return res.json({ "success": true, "msg": "Success", "next_payment": donor.next_payment, "recipients": donor.next_payment });
+    });
+});
+
+
 router.post('/transactions/:id', function(req, res) {
     Donorschema.get({ id: req.params.id }, function(err, donor_user) {
         if (err) {
