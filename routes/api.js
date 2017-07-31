@@ -101,6 +101,7 @@ router.get('/users/:id', function(req, res) {
         ip_address: '127.0.0.1',
         full_dehydrate: 'yes' //optional
     };
+
     let user;
     Users.get(
         Helpers.client,
@@ -112,7 +113,52 @@ router.get('/users/:id', function(req, res) {
                 res.json(errResp);
             } else {
                 user = userResponse;
-                res.json(user);
+                console.log(user);
+                const addDocsPayload = {
+                    documents: [{
+                        email: 'klinton@bluetonemedia.com',
+                        phone_number: '9107952280',
+                        ip: Helpers.ip_address,
+                        name: 'Karl Yeager',
+                        alias: 'Woof Woof',
+                        entity_type: 'M',
+                        entity_scope: 'Arts & Entertainment',
+                        day: 29,
+                        month: 3,
+                        year: 1985,
+                        address_street: '201 n front street',
+                        address_city: 'Wilmington',
+                        address_subdivision: 'CA',
+                        address_postal_code: '28401',
+                        address_country_code: 'US',
+                        virtual_docs: [{
+                            document_value: '111-111-3333',
+                            document_type: 'SSN'
+                        }],
+                        physical_docs: [{
+                            // use url to base64 helper
+                            document_value: 'data:image/gif;base64,SUQs==',
+                            document_type: 'GOVT_ID'
+                        }],
+                        social_docs: [{
+                            document_value: 'https://www.facebook.com/sankaet',
+                            document_type: 'FACEBOOK'
+                        }]
+                    }]
+                };
+
+                user.addDocuments(
+                    addDocsPayload,
+                    function(err, userResponse1) {
+                        // error or user object
+                        if (err) {
+                            return res.json(err);
+                        }
+                        console.log("success");
+                        res.json(userResponse1);
+                    }
+                );
+
             }
 
         });
@@ -1219,4 +1265,55 @@ router.post('/transactions/:id', function(req, res) {
         }
     });
 });
+
+router.post('/ad_document/:id', function(req, res) {
+    const addDocsPayload = {
+        documents: [{
+            email: 'klinton@bluetonemedia.com',
+            phone_number: '9107952280',
+            ip: Helpers.getUserIP(),
+            name: 'klint',
+            alias: 'Woof Woof',
+            entity_type: 'M',
+            entity_scope: 'Arts & Entertainment',
+            day: 29,
+            month: 3,
+            year: 1985,
+            address_street: '201 n front street',
+            address_city: 'Wilmington',
+            address_subdivision: 'CA',
+            address_postal_code: '28401',
+            address_country_code: 'US',
+            virtual_docs: [{
+                document_value: '111-111-3333',
+                document_type: 'SSN'
+            }],
+            physical_docs: [{
+                    // use url to base64 helper
+                    document_value: 'data:image/gif;base64,SUQs==',
+                    document_type: 'GOVT_ID'
+                },
+                {
+                    // or file to base64 helper
+                    document_value: Helpers.fileToBase64('/path/to/file'),
+                    document_type: 'SELFIE'
+                }
+            ],
+            social_docs: [{
+                document_value: 'https://www.facebook.com/sankaet',
+                document_type: 'FACEBOOK'
+            }]
+        }]
+    };
+
+    user.addDocuments(
+        addDocsPayload,
+        function(err, userResponse) {
+            // error or user object
+            user = userResponse;
+        }
+    );
+
+})
+
 module.exports = router;
