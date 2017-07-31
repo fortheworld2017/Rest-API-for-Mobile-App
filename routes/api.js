@@ -116,10 +116,10 @@ router.get('/users/:id', function(req, res) {
                 console.log(user);
                 const addDocsPayload = {
                     documents: [{
-                        email: 'klinton@bluetonemedia.com',
+                        email: 'donor4@mail.com',
                         phone_number: '9107952280',
                         ip: Helpers.ip_address,
-                        name: 'Karl Yeager',
+                        name: 'Dhfhh donor4',
                         alias: 'Woof Woof',
                         entity_type: 'M',
                         entity_scope: 'Arts & Entertainment',
@@ -132,17 +132,13 @@ router.get('/users/:id', function(req, res) {
                         address_postal_code: '28401',
                         address_country_code: 'US',
                         virtual_docs: [{
-                            document_value: '111-111-3333',
+                            document_value: '2222',
                             document_type: 'SSN'
                         }],
                         physical_docs: [{
                             // use url to base64 helper
                             document_value: 'data:image/gif;base64,SUQs==',
                             document_type: 'GOVT_ID'
-                        }],
-                        social_docs: [{
-                            document_value: 'https://www.facebook.com/sankaet',
-                            document_type: 'FACEBOOK'
                         }]
                     }]
                 };
@@ -197,13 +193,9 @@ router.get('/nodes/:id', function(req, res) {
 });
 
 router.post('/test', function(req, res) {
-
-    var obj1 = [{ id: 1, node: { id: 1, name: 2 } }];
-    var obj2 = { id: 2, node: { id: 2, name: 3 } };
-    var obj = []
-    obj = obj1;
-    obj.push(obj2);
-    console.log(obj);
+    var aa = "12-30-2017";
+    var bb = aa.split("-");
+    res.json(bb[0]);
     //  obj1.push(obj2);
     //  Recipientschema.get({ id: '1500827023939' }, function(err, nodes) {
     //          if (err) { return console.log(err); }
@@ -315,6 +307,8 @@ router.post('/recipient/signup', function(req, res) {
 
 router.post('/recipient/create_account/:id', function(req, res) {
     console.log(req.body);
+    var birthday = req.body.birthday;
+    var arr_birthday = birthday.splice("-");
     if (req.body.email && req.body.name) {
         Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
@@ -339,7 +333,33 @@ router.post('/recipient/create_account/:id', function(req, res) {
                         note: 'Recipient Synapse user',
                         supp_id: user.user_id,
                         is_business: false
-                    }
+                    },
+                    documents: [{
+                        email: req.body.email,
+                        phone_number: req.body.phone,
+                        ip: Helpers.ip_address,
+                        name: req.body.name,
+                        alias: 'synapse recipient',
+                        entity_type: 'M',
+                        entity_scope: 'Arts & Entertainment',
+                        day: arr_birthday[0],
+                        month: arr_birthday[1],
+                        year: arr_birthday[2],
+                        address_street: req.body.address,
+                        address_city: req.body.city,
+                        address_subdivision: req.body.state,
+                        address_postal_code: req.body.zip,
+                        address_country_code: 'US',
+                        virtual_docs: [{
+                            document_value: req.body.ssn,
+                            document_type: 'SSN'
+                        }],
+                        physical_docs: [{
+                            // use url to base64 helper
+                            document_value: 'data:image/gif;base64,SUQs==',
+                            document_type: 'GOVT_ID'
+                        }]
+                    }]
                 };
                 /******************* Synapse User create */
                 Users.create(
@@ -353,6 +373,7 @@ router.post('/recipient/create_account/:id', function(req, res) {
                             res.json({ "success": false, "msg": "Failed Synapse User Create" });
                         } else {
                             console.log(JSON.stringify(synapse_user));
+
                             /********** Recipient db create */
                             var recipient = new Recipientschema({
                                 id: req.params.id,
@@ -364,6 +385,8 @@ router.post('/recipient/create_account/:id', function(req, res) {
                                 city: req.body.city,
                                 state: req.body.state,
                                 zip: req.body.zip,
+                                ssn: req.body.ssn,
+                                subaccount_id: nodeResponse[0].json._id,
                                 synapse_user_id: synapse_user.json._id
                             })
                             recipient.save(function(err) {
@@ -377,7 +400,7 @@ router.post('/recipient/create_account/:id', function(req, res) {
                                             res.json({ "success": false, "msg": err.message });
                                         } else {
                                             console.log("Recipient Created" + req.params.id);
-                                            res.json({ "success": true, "msg": "Successfully created" });
+                                            res.json({ "success": true, "msg": "Successfully created", "permission": synapse_user.json.permission });
                                         }
                                     });
                                 }
@@ -504,6 +527,18 @@ router.post('/recipient/add_loan/:id', function(req, res) {
                                     } else {
                                         console.log('nodesResponse');
                                         console.log(JSON.stringify(nodesResponse));
+                                        const microPayload = {
+                                            micro: [0.1, 0.1]
+                                        };
+
+                                        var node = nodesResponse[0];
+
+                                        node.update(
+                                            microPayload,
+                                            function(err, nodeResponse) {
+                                                console.log("micro deposits creted");
+                                            }
+                                        );
                                         var node_obj = [];
                                         if (recipient.loans)
                                             node_obj = recipient.loans;
@@ -835,7 +870,10 @@ router.post('/donor/signup', function(req, res) {
 
 router.post('/donor/create_account/:id', function(req, res) {
     console.log(req.body);
+
     if (req.body.email && req.body.name) {
+        var birthday = req.body.birthday;
+        var arr_birthday = birthday.splice("-");
         Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
                 return res.json({ "success": false, "msg": err.message });
@@ -859,7 +897,33 @@ router.post('/donor/create_account/:id', function(req, res) {
                         note: 'Donor Synapse user',
                         supp_id: user.user_id,
                         is_business: false
-                    }
+                    },
+                    documents: [{
+                        email: req.body.email,
+                        phone_number: req.body.phone,
+                        ip: Helpers.ip_address,
+                        name: req.body.name,
+                        alias: 'synapse donor',
+                        entity_type: 'M',
+                        entity_scope: 'Arts & Entertainment',
+                        day: arr_birthday[0],
+                        month: arr_birthday[1],
+                        year: arr_birthday[2],
+                        address_street: req.body.address,
+                        address_city: req.body.city,
+                        address_subdivision: req.body.state,
+                        address_postal_code: req.body.zip,
+                        address_country_code: 'US',
+                        virtual_docs: [{
+                            document_value: req.body.ssn,
+                            document_type: 'SSN'
+                        }],
+                        physical_docs: [{
+                            // use url to base64 helper
+                            document_value: 'data:image/gif;base64,SUQs==',
+                            document_type: 'GOVT_ID'
+                        }]
+                    }]
                 };
                 /******************* Synapse User create */
                 Users.create(
@@ -882,8 +946,11 @@ router.post('/donor/create_account/:id', function(req, res) {
                                 city: req.body.city,
                                 state: req.body.state,
                                 zip: req.body.zip,
+                                ssn: req.body.ssn,
+                                subaccount_id: nodeResponse[0].json._id,
                                 synapse_user_id: synapse_user.json._id,
-                                phone: req.body.phone
+                                phone: req.body.phone,
+
                             })
                             donor.save(function(err) {
                                 if (err) {
@@ -896,7 +963,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                             res.json({ "success": false, "msg": err.message });
                                         } else {
                                             console.log("Donor Created" + req.params.id);
-                                            res.json({ "success": true, "msg": "Successfully created" });
+                                            res.json({ "success": true, "msg": "Successfully created", "permission": synapse_user.json.permission });
                                         }
                                     });
                                 }
@@ -986,6 +1053,21 @@ router.post('/donor/bank/:id', function(req, res) {
                                     } else {
                                         console.log('nodesResponse');
                                         console.log(JSON.stringify(nodesResponse));
+                                        const microPayload = {
+                                            micro: [0.1, 0.1]
+                                        };
+
+                                        var node = nodesResponse[0];
+
+                                        node.update(
+                                            microPayload,
+                                            function(err, nodeResponse) {
+                                                if (err) {
+                                                    console.log("err");
+                                                }
+                                                console.log("micro deposits creted");
+                                            }
+                                        );
                                         donor.bank_name = nodesResponse[0].json.info.bank_long_name;
                                         donor.node_id = nodesResponse[0].json._id;
                                         donor.account_id = account_id;
@@ -1214,18 +1296,15 @@ router.post('/transactions/:id', function(req, res) {
         } else {
             var createPayload = {
                 to: {
-                    type: 'SYNAPSE-US',
+                    type: 'ACH-US',
                     id: req.body.to_node_id
                 },
                 amount: {
-                    amount: 100,
+                    amount: 10,
                     currency: 'USD'
                 },
                 extra: {
-                    supp_id: '',
                     note: 'Deposit to synapse account',
-                    webhook: '',
-                    process_on: 0,
                     ip: '192.168.0.1'
                 }
             };
@@ -1239,21 +1318,21 @@ router.post('/transactions/:id', function(req, res) {
                     _id: donor_user.synapse_user_id
                 },
                 function(err, user) {
-                    if (err) { return res.json({ "success": false, "msg": "Error" }); }
+                    if (err) { return res.json({ "success": false, "msg": err.message }); }
                     testUser = user;
                     Nodes.get(
                         testUser, {
                             _id: donor_user.node_id
                         },
                         function(err, node) {
-                            if (err) { return res.json({ "success": false, "msg": "Error" }); }
+                            if (err) { return res.json({ "success": false, "msg": err.message }); }
                             testNode = node;
                             console.log(testNode);
                             Transactions.create(
                                 testNode,
                                 createPayload,
                                 function(err, transaction) {
-                                    if (err) { return res.json({ "success": false, "msg": "Error" }); }
+                                    if (err) { return res.json({ "success": false, "msg": err.message }); }
                                     res.json({ "success": true, "transaction": transaction });
                                 }
                             );
@@ -1266,13 +1345,13 @@ router.post('/transactions/:id', function(req, res) {
     });
 });
 
-router.post('/ad_document/:id', function(req, res) {
+router.post('/add_document/:id', function(req, res) {
     const addDocsPayload = {
         documents: [{
-            email: 'klinton@bluetonemedia.com',
+            email: 'donor1@mail.com',
             phone_number: '9107952280',
             ip: Helpers.getUserIP(),
-            name: 'klint',
+            name: 'Donor donor',
             alias: 'Woof Woof',
             entity_type: 'M',
             entity_scope: 'Arts & Entertainment',
@@ -1285,23 +1364,8 @@ router.post('/ad_document/:id', function(req, res) {
             address_postal_code: '28401',
             address_country_code: 'US',
             virtual_docs: [{
-                document_value: '111-111-3333',
+                document_value: '2222',
                 document_type: 'SSN'
-            }],
-            physical_docs: [{
-                    // use url to base64 helper
-                    document_value: 'data:image/gif;base64,SUQs==',
-                    document_type: 'GOVT_ID'
-                },
-                {
-                    // or file to base64 helper
-                    document_value: Helpers.fileToBase64('/path/to/file'),
-                    document_type: 'SELFIE'
-                }
-            ],
-            social_docs: [{
-                document_value: 'https://www.facebook.com/sankaet',
-                document_type: 'FACEBOOK'
             }]
         }]
     };

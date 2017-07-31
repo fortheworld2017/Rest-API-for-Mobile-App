@@ -42,6 +42,12 @@ var donorSchema = new Schema({
     bank_name: {
         type: String
     },
+    subaccount_id: {
+        type: String
+    },
+    ssn: {
+        type: String
+    },
     node_id: {
         type: String
     },

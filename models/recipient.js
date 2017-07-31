@@ -36,6 +36,12 @@ var recipientSchema = new Schema({
     zip: {
         type: String
     },
+    subaccount_id: {
+        type: String
+    },
+    ssn: {
+        type: String
+    },
     synapse_user_id: {
         type: String
     },
