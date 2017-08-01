@@ -192,65 +192,12 @@ router.get('/nodes/:id', function(req, res) {
 
 });
 
-router.post('/test', function(req, res) {
-    var aa = "12-30-2017";
-    var bb = aa.split("-");
-    res.json(bb[0]);
-    //  obj1.push(obj2);
-    //  Recipientschema.get({ id: '1500827023939' }, function(err, nodes) {
-    //          if (err) { return console.log(err); }
-    //          nodes.loans.push(obj2);
-    //          res.json(nodes.loans);
-    //      })
-    // obj.push(obj2);
-    // var recipient_user;
-    // Recipientschema.get({ id: '1500827023939' }, function(err, user) {
-    //     if (!user) {
-    //         res.json({ "success": false, "msg": "No Register" });
-    //     } else {
-    //         recipient_user = user;
-    //         console.log(recipient_user.synapse_user_id + "\n");
-    //     }
-
-    // });
-
-});
-
-router.post('/profile/:id', function(req, res) {
-    if (req.body.name) {
-        var create_profile = new Profileschema({
-            id: req.params.id,
-            name: req.body.name,
-            birthday: req.body.birthday,
-            address: req.body.adress,
-            city: req.body.city,
-            state: req.body.state,
-            zip: req.body.zip
-        });
-        create_profile.save({
-            condition: '#o <> :id',
-            conditionNames: { o: 'id' },
-            conditionValues: { id: req.params.id }
-        }, function(err) {
-            if (err) {
-                res.json({ "success": "false", "msg": "Exist profile" });
-            } else {
-                res.json({ "success": "true", "msg": "profile created success" });
-            }
-
-        });
-    } else {
-        res.json({ "success": "false", "msg": "Invalid Vlaue" });
-    }
-
-});
-
 router.post('/add_document/:id', function(req, res) {
     const addDocsPayload = {
         documents: [{
             email: 'donor1@mail.com',
             phone_number: '9107952280',
-            ip: Helpers.getUserIP(),
+            ip: Helpers.ip_address,
             name: 'Donor donor',
             alias: 'Woof Woof',
             entity_type: 'M',
@@ -277,177 +224,13 @@ router.post('/add_document/:id', function(req, res) {
             user = userResponse;
         }
     );
-
 })
 
 router.get('/', function(req, res) {
     res.json({ 'result': 'API RUNNING' });
 });
 
-
-
-
-// real API
-
-router.post('/signin', function(req, res) {
-    console.log(req.body.email);
-    if (req.body.email && req.body.password) {
-        Userschema.get({ email: req.body.email }, function(err, user) {
-            if (err) {
-                console.log(err);
-                return res.json({ "success": false, "msg": err.message });
-            }
-            if (!user) {
-                return res.json({ "success": false, "msg": "No Registered" });
-            }
-            if (req.body.password == user.password) {
-                return res.json({
-                    "success": true,
-                    "msg": "login success",
-                    "user": user
-                });
-            }
-            return res.json({ "success": false, "msg": "Invalid Password" });
-        });
-    } else {
-        res.json({ "success": false, "msg": "Invalid Parameter" });
-    }
-});
-
-router.post('/recipient/signup', function(req, res) {
-    if (req.body.email && req.body.password) {
-        var id = new Date().getTime().toString();
-        var register_user = new Userschema({
-            email: req.body.email,
-            password: req.body.password,
-            user_id: id,
-            user_type: 'recipient'
-        });
-        register_user.save({
-            condition: '#o <> :email',
-            conditionNames: { o: 'email' },
-            conditionValues: { email: req.body.email }
-        }, function(err) {
-            if (err) {
-                console.log(err);
-                res.json({ "success": false, "msg": err.message });
-            } else {
-                res.json({ "success": true, "msg": "Successfully created", "user_id": id });
-            }
-        });
-    } else {
-        res.json({ "success": false, "msg": "Invalid Parameter" });
-    }
-});
-
-router.post('/recipient/create_account/:id', function(req, res) {
-    console.log(req.body);
-    if (req.body.email && req.body.name) {
-        var birthday = new Date(req.body.birthday);
-        Userschema.get({ email: req.body.email }, function(err, user) {
-            if (err) {
-                return res.json({ "success": false, "msg": err.message });
-            }
-            if (!user) {
-                return res.json({ "success": false, "msg": "Invaild User ID" });
-            }
-            if (user.user_id == req.params.id && !user.has_account) {
-                let create_synapse_user = {
-                    logins: [{
-                        email: req.body.email,
-                        read_only: false
-                    }],
-                    phone_numbers: [
-                        req.body.phone
-                    ],
-                    legal_names: [
-                        req.body.name
-                    ],
-                    extra: {
-                        note: 'Recipient Synapse user',
-                        supp_id: user.user_id,
-                        is_business: false
-                    },
-                    documents: [{
-                        email: req.body.email,
-                        phone_number: req.body.phone,
-                        ip: Helpers.ip_address,
-                        name: req.body.name,
-                        alias: 'synapse recipient',
-                        entity_type: 'M',
-                        entity_scope: 'Arts & Entertainment',
-                        day: birthday.getDay,
-                        month: birthday.getMonth,
-                        year: birthday.getFullYear,
-                        address_street: req.body.address,
-                        address_city: req.body.city,
-                        address_subdivision: req.body.state,
-                        address_postal_code: req.body.zip,
-                        address_country_code: 'US',
-                        virtual_docs: [{
-                            document_value: req.body.ssn,
-                            document_type: 'SSN'
-                        }],
-                        physical_docs: [{
-                            // use url to base64 helper
-                            document_value: 'data:image/gif;base64,SUQs==',
-                            document_type: 'GOVT_ID'
-                        }]
-                    }]
-                };
-                /******************* Synapse User create */
-                Users.create(
-                    Helpers.client,
-                    Helpers.fingerprint,
-                    Helpers.ip_address,
-                    create_synapse_user,
-                    function(err, synapse_user) {
-                        if (err) {
-                            console.log(err);
-                            res.json({ "success": false, "msg": "Failed Synapse User Create" });
-                        } else {
-                            console.log(JSON.stringify(synapse_user));
-
-                            /********** Recipient db create */
-                            var recipient = new Recipientschema({
-                                id: req.params.id,
-                                email: req.body.email,
-                                phone: req.body.phone,
-                                name: req.body.name,
-                                birthday: req.body.birthday,
-                                address: req.body.address,
-                                city: req.body.city,
-                                state: req.body.state,
-                                zip: req.body.zip,
-                                ssn: req.body.ssn,
-                                synapse_user_id: synapse_user.json._id
-                            })
-                            recipient.save(function(err) {
-                                if (err) {
-                                    console.log(err);
-                                    res.json({ "success": false, "msg": err.message });
-                                } else {
-                                    Userschema.update({ email: req.body.email }, { has_account: true }, function(err) {
-                                        if (err) {
-                                            console.log(err);
-                                            res.json({ "success": false, "msg": err.message });
-                                        } else {
-                                            console.log("Recipient Created" + req.params.id);
-                                            res.json({ "success": true, "msg": "Successfully created", "permission": synapse_user.json.permission });
-                                        }
-                                    });
-                                }
-                            })
-                        }
-                    });
-            } else {
-                res.json({ "success": false, "msg": "Invalid User ID" });
-            }
-        });
-    } else {
-        res.json({ "success": false, "msg": "Invalid Parameter" });
-    }
-});
+// alpha API
 
 router.get('/recipient/get_profile/:id', function(req, res) {
     Recipientschema.get({ id: req.params.id }, function(err, user_profile) {
@@ -486,152 +269,450 @@ router.post('/recipient/update_profile/:id', function(req, res) {
     });
 });
 
-router.post('/recipient/add_loan/:id', function(req, res) {
-    /// get recipient db from id params
-    Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+
+router.get('/donor/get_profile/:id', function(req, res) {
+    Donorschema.get({ id: req.params.id }, function(err, user_profile) {
         if (err) {
             return res.json({ "success": false, "msg": err.message });
         }
-        if (!recipient) {
-            res.json({ "success": false, "msg": "Invaild User ID" });
+        if (!user_profile) {
+            return res.json({ "success": false, "msg": "Invaild User ID" });
         } else {
-            //// get plaid accunt from publick_token 
-            PUBLIC_TOKEN = req.body.public_token;
-            console.log(PUBLIC_TOKEN);
-            let account_id = req.body.account_id;
-            plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
-                if (error != null) {
-                    console.log(msg + '\n' + error);
-                    return res.json({ "success": false, "msg": "Failed Get Access Token" });
+            return res.json({ "success": false, "msg": "success", "user": user_profile });
+        }
+    });
+});
+
+router.post('/donor/update_profile/:id', function(req, res) {
+    Donorschema.get({ id: req.params.id }, function(err, user_profile) {
+        if (err) {
+            return res.json({ "success": false, "msg": err.message });
+        }
+        if (!user_profile) {
+            return res.json({ "success": false, "msg": "Invaild User ID" });
+        } else {
+            user_profile.adress = req.body.address;
+            user_profile.name = req.body.name;
+            user_profile.birthday = req.body.birthday;
+            user_profile.state = req.body.state;
+            user_profile.phone = req.body.phone;
+            user_profile.save(function(err) {
+                if (err) {
+                    return res.json({ "success": false, "msg": err.message });
                 }
-                ACCESS_TOKEN = tokenResponse.access_token;
-                ITEM_ID = tokenResponse.item_id;
-                console.log('Access Token: ' + ACCESS_TOKEN);
-                console.log('Item ID: ' + ITEM_ID);
-                plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
-                    if (error != null) {
-                        console.log(msg + '\n' + error);
-                        return res.json({ "success": false, "msg": "Unable to pull accounts from the Plaid API." });
-                    }
-
-                    console.log(authResponse.accounts);
-                    var selected_index;
-                    let numbers = authResponse.numbers;
-                    for (var i = 0; i < numbers.length; i++) {
-                        if (numbers[i].account_id === account_id)
-                            selected_index = i;
-                    }
-
-                    let ach_Node = {
-                        type: 'ACH-US',
-                        info: {
-                            nickname: 'Slap Recipient Loan',
-                            account_num: numbers[selected_index].account,
-                            routing_num: numbers[selected_index].routing,
-                            type: 'PERSONAL',
-                            class: 'SAVINGS'
-                        },
-                        extra: {
-                            supp_id: recipient.id
-                        }
-                    };
-
-                    ///get synapse useraccount from synapse_user_id  
-                    var node_User;
-                    let options = {
-                        _id: recipient.synapse_user_id,
-                        fingerprint: Helpers.fingerprint,
-                        ip_address: '127.0.0.1',
-                        full_dehydrate: 'yes' //optional
-                    };
-                    Users.get(
-                        Helpers.client,
-                        options,
-                        function(errResp, userResponse) {
-                            // error or user object
-                            if (errResp) {
-                                res.json({ "success": false, "msg": "Unable to pull User from the synapse_user_id." });
-                            } else {
-                                node_user = userResponse;
-                                /******************   Node user add */
-                                Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
-                                    if (err) {
-                                        res.json({ "success": true, "msg": "Unable to Create Node." });
-                                    } else {
-                                        console.log('nodesResponse');
-                                        console.log(JSON.stringify(nodesResponse));
-                                        const microPayload = {
-                                            micro: [0.1, 0.1]
-                                        };
-
-                                        var node = nodesResponse[0];
-
-                                        node.update(
-                                            microPayload,
-                                            function(err, nodeResponse) {
-                                                console.log("micro deposits creted");
-                                            }
-                                        );
-                                        var node_obj = [];
-                                        if (recipient.loans)
-                                            node_obj = recipient.loans;
-                                        // node_obj.push(recipient.loans);
-                                        let node_options_new = {
-                                            node_id: nodesResponse[0].json._id,
-                                            bank_name: nodesResponse[0].json.info.bank_long_name,
-                                            access_token: ACCESS_TOKEN,
-                                            account_id: account_id
-                                        }
-                                        node_obj.push(node_options_new);
-                                        Recipientschema.update({ id: recipient.id }, { loans: node_obj }, function(err) {
-                                            if (err) {
-                                                console.log(err);
-                                                return res.json({ "success": false, "msg": err.message });
-                                            }
-                                            console.log("Add loans");
-                                            res.json({ "success": true, "msg": "Success" });
-                                        })
-                                    }
-                                });
-                            }
-                        });
-                });
+                return res.json({ "success": true, "msg": "success" });
             });
         }
     });
 });
 
-router.post('/recipient/add_donor/:id', function(req, res) {
-    Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+router.post('/transactions/:id', function(req, res) {
+    Donorschema.get({ id: req.params.id }, function(err, donor_user) {
         if (err) {
-            console.log(err);
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!recipient) {
-            res.json({ "success": false, "msg": "Invaild User ID" });
+            res.json({ "success": false, "msg": "Error" });
         } else {
-            var donors = [];
-            if (recipient.donors)
-                donors = recipient.donors;
-
-            let new_donor = {
-                "email": req.body.email,
-                "name": req.body.name,
-                "phone": req.body.phone,
-                "loan": req.body.loan,
-                "connected": false
-            }
-            donors.push(new_donor);
-            Recipientschema.update({ id: req.params.id }, { donors: donors }, function(err) {
-                if (err) {
-                    console.log(err);
-                    return res.json({ "success": false, "msg": err.message });
+            var createPayload = {
+                to: {
+                    type: 'ACH-US',
+                    id: req.body.to_node_id
+                },
+                amount: {
+                    amount: 10,
+                    currency: 'USD'
+                },
+                extra: {
+                    note: 'Deposit to synapse account',
+                    ip: Helpers.ip_address
                 }
-                console.log("Added new donor");
-                res.json({ "success": true, "msg": "Success" });
-            })
+            };
+
+            var testUser;
+            var testNode;
+            Users.get(
+                Helpers.client, {
+                    ip_address: Helpers.ip_address,
+                    fingerprint: Helpers.fingerprint,
+                    _id: donor_user.synapse_user_id
+                },
+                function(err, user) {
+                    if (err) { return res.json({ "success": false, "msg": err.message }); }
+                    testUser = user;
+                    Nodes.get(
+                        testUser, {
+                            _id: donor_user.node_id
+                        },
+                        function(err, node) {
+                            if (err) { return res.json({ "success": false, "msg": err.message }); }
+                            testNode = node;
+                            console.log(testNode);
+                            Transactions.create(
+                                testNode,
+                                createPayload,
+                                function(err, transaction) {
+                                    if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                    res.json({ "success": true, "transaction": transaction });
+                                }
+                            );
+                        }
+                    );
+                });
         }
     });
+});
+
+router.post('/add_document/:id', function(req, res) {
+    const addDocsPayload = {
+        documents: [{
+            email: 'donor1@mail.com',
+            phone_number: '9107952280',
+            ip: Helpers.ip_address,
+            name: 'Donor donor',
+            alias: 'Woof Woof',
+            entity_type: 'M',
+            entity_scope: 'Arts & Entertainment',
+            day: 29,
+            month: 3,
+            year: 1985,
+            address_street: '201 n front street',
+            address_city: 'Wilmington',
+            address_subdivision: 'CA',
+            address_postal_code: '28401',
+            address_country_code: 'US',
+            virtual_docs: [{
+                document_value: '2222',
+                document_type: 'SSN'
+            }]
+        }]
+    };
+
+    user.addDocuments(
+        addDocsPayload,
+        function(err, userResponse) {
+            // error or user object
+            user = userResponse;
+        }
+    );
+
+})
+
+
+// real API
+
+router.post('/signin', function(req, res) {
+    console.log(req.body);
+    if (req.body.email && req.body.password) {
+        Userschema.get({ email: req.body.email }, function(err, user) {
+            if (err) {
+                console.log(err);
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!user) {
+                return res.json({ "success": false, "msg": "No Registered" });
+            }
+            if (req.body.password == user.password) {
+                return res.json({
+                    "success": true,
+                    "msg": "login success",
+                    "user": user
+                });
+            }
+            return res.json({ "success": false, "msg": "Invalid Password" });
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
+});
+
+router.post('/recipient/signup', function(req, res) {
+    console.log(req.body);
+    if (req.body.email && req.body.password) {
+        var id = new Date().getTime().toString();
+        var register_user = new Userschema({
+            email: req.body.email,
+            password: req.body.password,
+            user_id: id,
+            user_type: 'recipient'
+        });
+        register_user.save({
+            condition: '#o <> :email',
+            conditionNames: { o: 'email' },
+            conditionValues: { email: req.body.email }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                res.json({ "success": false, "msg": err.message });
+            } else {
+                res.json({ "success": true, "msg": "Successfully created", "user_id": id });
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
+});
+
+router.post('/recipient/create_account/:id', function(req, res) {
+    console.log(req.body);
+    if (req.body.email && req.body.name && req.body.birthday && req.body.ssn && req.body.phone &&
+        req.body.address && req.body.city && req.body.state && req.body.zip) {
+        var birthday = new Date(req.body.birthday);
+        Userschema.get({ email: req.body.email }, function(err, user) {
+            if (err) {
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!user) {
+                return res.json({ "success": false, "msg": "Invaild User ID" });
+            }
+            if (user.user_id == req.params.id && !user.has_account) {
+                let create_synapse_user = {
+                    logins: [{
+                        email: req.body.email,
+                        read_only: false
+                    }],
+                    phone_numbers: [
+                        req.body.phone
+                    ],
+                    legal_names: [
+                        req.body.name
+                    ],
+                    extra: {
+                        note: 'Recipient User',
+                        supp_id: user.user_id,
+                        is_business: false
+                    },
+                    documents: [{
+                        email: req.body.email,
+                        phone_number: req.body.phone,
+                        ip: Helpers.ip_address,
+                        name: req.body.name,
+                        alias: 'Recipient User',
+                        entity_type: 'M',
+                        entity_scope: 'Arts & Entertainment',
+                        day: birthday.getDay,
+                        month: birthday.getMonth,
+                        year: birthday.getFullYear,
+                        address_street: req.body.address,
+                        address_city: req.body.city,
+                        address_subdivision: req.body.state,
+                        address_postal_code: req.body.zip,
+                        address_country_code: 'US',
+                        virtual_docs: [{
+                            document_value: req.body.ssn,
+                            document_type: 'SSN'
+                        }],
+                        physical_docs: [{
+                            // use url to base64 helper
+                            document_value: 'data:image/gif;base64,SUQs==',
+                            document_type: 'GOVT_ID'
+                        }]
+                    }]
+                };
+                /******************* Synapse User create */
+                Users.create(
+                    Helpers.client,
+                    Helpers.fingerprint,
+                    Helpers.ip_address,
+                    create_synapse_user,
+                    function(err, synapse_user) {
+                        if (err) {
+                            console.log(err);
+                            res.json({ "success": false, "msg": "Failed Synapse User Create" });
+                        } else {
+                            console.log(JSON.stringify(synapse_user));
+                            /********** Recipient DB Create */
+                            var recipient = new Recipientschema({
+                                id: user.user_id,
+                                email: req.body.email,
+                                phone: req.body.phone,
+                                name: req.body.name,
+                                birthday: req.body.birthday,
+                                address: req.body.address,
+                                city: req.body.city,
+                                state: req.body.state,
+                                zip: req.body.zip,
+                                ssn: req.body.ssn,
+                                synapse_user_id: synapse_user.json._id,
+                                document_id: synapse_user.json.documents.id
+                            })
+                            recipient.save(function(err) {
+                                if (err) {
+                                    console.log(err);
+                                    res.json({ "success": false, "msg": err.message });
+                                } else {
+                                    Userschema.update({ email: req.body.email }, { has_account: true }, function(err) {
+                                        if (err) {
+                                            console.log(err);
+                                            res.json({ "success": false, "msg": err.message });
+                                        } else {
+                                            console.log("Recipient Created" + req.params.id);
+                                            res.json({ "success": true, "msg": "Successfully created" });
+                                        }
+                                    });
+                                }
+                            })
+                        }
+                    });
+            } else {
+                res.json({ "success": false, "msg": "Invalid User ID" });
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
+});
+
+router.post('/recipient/add_loan/:id', function(req, res) {
+    console.log(req.body);
+    if (req.body.public_token && req.body.account_id && req.body.account_name) {
+        // get recipient db from id params
+        Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+            if (err) {
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!recipient) {
+                res.json({ "success": false, "msg": "Invaild User ID" });
+            } else {
+                //// get plaid accunt from publick_token 
+                PUBLIC_TOKEN = req.body.public_token;
+                console.log(PUBLIC_TOKEN);
+                let account_id = req.body.account_id;
+                plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
+                    if (error != null) {
+                        console.log(msg + '\n' + error);
+                        return res.json({ "success": false, "msg": "Failed Get Access Token" });
+                    }
+                    ACCESS_TOKEN = tokenResponse.access_token;
+                    ITEM_ID = tokenResponse.item_id;
+                    console.log('Access Token: ' + ACCESS_TOKEN);
+                    console.log('Item ID: ' + ITEM_ID);
+                    plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
+                        if (error != null) {
+                            console.log(msg + '\n' + error);
+                            return res.json({ "success": false, "msg": "Unable to pull accounts from the Plaid API." });
+                        }
+                        console.log(authResponse.accounts);
+                        var selected_index;
+                        let numbers = authResponse.numbers;
+                        for (var i = 0; i < numbers.length; i++) {
+                            if (numbers[i].account_id === account_id)
+                                selected_index = i;
+                        }
+
+                        let ach_Node = {
+                            type: 'ACH-US',
+                            info: {
+                                nickname: req.body.account_name,
+                                account_num: numbers[selected_index].account,
+                                routing_num: numbers[selected_index].routing,
+                                type: 'PERSONAL',
+                                class: 'SAVINGS'
+                            }
+                        };
+
+                        ///get synapse useraccount from synapse_user_id  
+                        var node_User;
+                        let options = {
+                            _id: recipient.synapse_user_id,
+                            fingerprint: Helpers.fingerprint,
+                            ip_address: Helpers.getUserIP(),
+                            full_dehydrate: 'yes' //optional
+                        };
+                        Users.get(
+                            Helpers.client,
+                            options,
+                            function(errResp, userResponse) {
+                                // error or user object
+                                if (errResp) {
+                                    res.json({ "success": false, "msg": "Unable to pull User from the synapse_user_id." });
+                                } else {
+                                    node_user = userResponse;
+                                    /******************   Node user add */
+                                    Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
+                                        if (err) {
+                                            res.json({ "success": false, "msg": "Unable to Create Node." });
+                                        } else {
+                                            console.log('nodesResponse');
+                                            console.log(JSON.stringify(nodesResponse));
+                                            /*const microPayload = {
+                                                micro: [0.1, 0.1]
+                                            };
+
+                                            var node = nodesResponse[0];
+
+                                            node.update(
+                                                microPayload,
+                                                function(err, nodeResponse) {
+                                                    console.log("micro deposits created");
+                                                }
+                                            );*/
+                                            var node_obj = [];
+                                            if (recipient.loans)
+                                                node_obj = recipient.loans;
+                                            // node_obj.push(recipient.loans);
+                                            let node_options_new = {
+                                                node_id: nodesResponse[0].json._id,
+                                                bank_name: nodesResponse[0].json.info.bank_name,
+                                                access_token: ACCESS_TOKEN,
+                                                account_id: account_id
+                                            }
+                                            node_obj.push(node_options_new);
+                                            Recipientschema.update({ id: recipient.id }, { loans: node_obj }, function(err) {
+                                                if (err) {
+                                                    console.log(err);
+                                                    return res.json({ "success": false, "msg": err.message });
+                                                }
+                                                console.log("Add loans");
+                                                res.json({ "success": true, "msg": "Success" });
+                                            })
+                                        }
+                                    });
+                                }
+                            });
+                    });
+                });
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
+});
+
+router.post('/recipient/add_donor/:id', function(req, res) {
+    console.log(req.body);
+    if (req.body.name && req.body.email && req.body.phone && req.body.loan) {
+        Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+            if (err) {
+                console.log(err);
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!recipient) {
+                res.json({ "success": false, "msg": "Invaild User ID" });
+            } else {
+                var donors = [];
+                if (recipient.donors) {
+                    donors = recipient.donors;
+                }
+
+                let new_donor = {
+                    "email": req.body.email,
+                    "name": req.body.name,
+                    "phone": req.body.phone,
+                    "loan": req.body.loan,
+                    "connected": false
+                }
+                donors.push(new_donor);
+                Recipientschema.update({ id: req.params.id }, { donors: donors }, function(err) {
+                    if (err) {
+                        console.log(err);
+                        return res.json({ "success": false, "msg": err.message });
+                    }
+                    console.log("Added new donor");
+                    res.json({ "success": true, "msg": "Success" });
+                })
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.get('/recipient/get_donors/:id', function(req, res) {
@@ -649,113 +730,118 @@ router.get('/recipient/get_donors/:id', function(req, res) {
 });
 
 router.post('/recipient/get_donor/:id', function(req, res) {
-    Recipientschema.get({ id: req.params.id }, function(err, recipient) {
-        if (err) {
-            console.log(err);
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!recipient) {
-            return res.json({ "success": false, "msg": "Invaild User ID" });
-        } else {
-            console.log(req.body.donor_email);
-            var recipient_loan = null;
-            var recipient_donor = null;
-            for (var i = 0; i < recipient.donors.length; i++) {
-                if (recipient.donors[i].email == req.body.donor_email) {
-                    recipient_donor = recipient.donors[i];
-                    if (recipient_donor.connected == false) {
-                        return res.json({ "success": false, "msg": "No Connected this Donor" });
+    console.log(req.body);
+    if (req.body.donor_email) {
+        Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+            if (err) {
+                console.log(err);
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!recipient) {
+                return res.json({ "success": false, "msg": "Invaild User ID" });
+            } else {
+                console.log(req.body.donor_email);
+                var recipient_loan = null;
+                var recipient_donor = null;
+                for (var i = 0; i < recipient.donors.length; i++) {
+                    if (recipient.donors[i].email == req.body.donor_email) {
+                        recipient_donor = recipient.donors[i];
+                        if (recipient_donor.connected == false) {
+                            return res.json({ "success": false, "msg": "No Connected this Donor" });
+                        }
+                        break;
                     }
-                    break;
                 }
-            }
-            if (recipient_donor == null) {
-                return res.json({ "success": false, "msg": "Unable to find Donor" });
-            }
-            for (var i = 0; i < recipient.loans.length; i++) {
-                if (recipient_donor.loan == recipient.loans[i].node_id) {
-                    recipient_loan = recipient.loans[i];
-                    break;
+                if (recipient_donor == null) {
+                    return res.json({ "success": false, "msg": "Unable to find Donor" });
                 }
-            }
-            if (recipient_loan == null) {
-                return res.json({ "success": false, "msg": "Unable to find Assoiciated Loan" });
-            }
-            Userschema.get({ email: req.body.donor_email }, function(err, user) {
-                if (err) {
-                    console.log(err);
-                    return res.json({ "success": false, "msg": err.message });
+                for (var i = 0; i < recipient.loans.length; i++) {
+                    if (recipient_donor.loan == recipient.loans[i].node_id) {
+                        recipient_loan = recipient.loans[i];
+                        break;
+                    }
                 }
-                if (!user) {
-                    return res.json({ "success": false, "msg": "No Registered this Donor" });
-                } else {
-                    console.log(user);
-                    Donorschema.get({ id: user.user_id }, function(err, donor) {
-                        if (err) {
-                            return res.json({ "success": false, "msg": err.message });
-                        }
-                        if (!user) {
-                            return res.json({ "success": false, "msg": "Unable to pull Donor User" });
-                        } else {
-                            var donor_recipient = null;
-                            for (var i = 0; i < donor.recipients.length; i++) {
-                                if (donor.recipients[i].email == recipient.email)
-                                    donor_recipient = donor.recipients[i];
+                if (recipient_loan == null) {
+                    return res.json({ "success": false, "msg": "Unable to find Assoiciated Loan" });
+                }
+                Userschema.get({ email: req.body.donor_email }, function(err, user) {
+                    if (err) {
+                        console.log(err);
+                        return res.json({ "success": false, "msg": err.message });
+                    }
+                    if (!user) {
+                        return res.json({ "success": false, "msg": "No Registered this Donor" });
+                    } else {
+                        console.log(user);
+                        Donorschema.get({ id: user.user_id }, function(err, donor) {
+                            if (err) {
+                                return res.json({ "success": false, "msg": err.message });
                             }
-                            if (donor_recipient == null) {
-                                return res.json({ "success": false, "msg": "No Accept this Donor You" });
+                            if (!user) {
+                                return res.json({ "success": false, "msg": "Unable to pull Donor User" });
+                            } else {
+                                var donor_recipient = null;
+                                for (var i = 0; i < donor.recipients.length; i++) {
+                                    if (donor.recipients[i].email == recipient.email)
+                                        donor_recipient = donor.recipients[i];
+                                }
+                                if (donor_recipient == null) {
+                                    return res.json({ "success": false, "msg": "No Accept this Donor You" });
+                                }
+                                res.json({
+                                    "success": true,
+                                    "msg": "Success",
+                                    "name": recipient_donor.name,
+                                    "phone": recipient_donor.phone,
+                                    "email": recipient_donor.email,
+                                    "loan_bank_name": recipient_loan.bank_name,
+                                    "donor_bank_name": donor.bank_name,
+                                    "count": donor_recipient.count,
+                                    "balance": donor_recipient.balance
+                                });
                             }
-                            res.json({
-                                "success": true,
-                                "msg": "Success",
-                                "name": recipient_donor.name,
-                                "phone": recipient_donor.phone,
-                                "email": recipient_donor.email,
-                                "loan_bank_name": recipient_loan.bank_name,
-                                "donor_bank_name": donor.bank_name,
-                                "count": donor_recipient.count,
-                                "balance": donor_recipient.balance
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
+                        });
+                    }
+                });
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.post('/recipient/update_donor/:id', function(req, res) {
-    Recipientschema.get({ id: req.params.id }, function(err, recipient) {
-        if (err) {
-            console.log(err);
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!recipient) {
-            return res.json({ "success": false, "msg": "Invaild User ID" });
-        } else {
-            console.log(recipient);
-            console.log(req.body.donor_email);
-            console.log(req.body.loan);
-            var updated = false;
-            for (var i = 0; i < recipient.donors.length; i++) {
-                if (recipient.donors[i].email == req.body.donor_email) {
-                    recipient.donors[i].loan = req.body.loan;
-                    break;
-                }
+    console.log(req.body);
+    if (req.body.donor_email && req.body.loan) {
+        Recipientschema.get({ id: req.params.id }, function(err, recipient) {
+            if (err) {
+                console.log(err);
+                return res.json({ "success": false, "msg": err.message });
             }
-            if (!updated) {
-                return res.json({ "success": false, "msg": "Unable to find Donor" });
-            }
-            Recipientschema.update({ id: req.params.id }, { donors: recipient.donors }, function(err) {
-                if (err) {
-                    console.log(err);
-                    return res.json({ "success": false, "msg": err.message });
+            if (!recipient) {
+                return res.json({ "success": false, "msg": "Invaild User ID" });
+            } else {
+                console.log(recipient);
+                for (var i = 0; i < recipient.donors.length; i++) {
+                    if (recipient.donors[i].email == req.body.donor_email) {
+                        recipient.donors[i].loan = req.body.loan;
+                        break;
+                    }
                 }
-                console.log("Reassign new loan");
-                res.json({ "success": true, "msg": "Success" });
-            })
-        }
-    });
+                recipient.save(function(err) {
+                    if (err) {
+                        console.log(err);
+                        res.json({ "success": false, "msg": err.message });
+                    } else {
+                        console.log("Reassign new loan");
+                        res.json({ "success": true, "msg": "Success" });
+                    }
+                })
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.get('/recipient/get_loans/:id', function(req, res) {
@@ -786,7 +872,7 @@ router.get('/recipient/get_balances/:id', function(req, res) {
         let options = {
             _id: recipient.synapse_user_id,
             fingerprint: Helpers.fingerprint,
-            ip_address: '127.0.0.1',
+            ip_address: Helpers.getUserIP(),
             full_dehydrate: 'yes' //optional
         };
         var synapse_user;
@@ -874,7 +960,7 @@ router.get('/recipient/get_balances/:id', function(req, res) {
 
 /************************ Donor ******************/
 router.post('/donor/signup', function(req, res) {
-    console.log("create donor");
+    console.log(req.body);
     if (req.body.email && req.body.password) {
         var id = new Date().getTime().toString();
         var register_user = new Userschema({
@@ -903,7 +989,8 @@ router.post('/donor/signup', function(req, res) {
 
 router.post('/donor/create_account/:id', function(req, res) {
     console.log(req.body);
-    if (req.body.email && req.body.name) {
+    if (req.body.email && req.body.name && req.body.birthday && req.body.ssn && req.body.phone &&
+        req.body.address && req.body.city && req.body.state && req.body.zip) {
         var birthday = new Date(req.body.birthday);
         Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
@@ -925,7 +1012,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                         req.body.name
                     ],
                     extra: {
-                        note: 'Donor Synapse user',
+                        note: 'Donor User',
                         supp_id: user.user_id,
                         is_business: false
                     },
@@ -934,7 +1021,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                         phone_number: req.body.phone,
                         ip: Helpers.ip_address,
                         name: req.body.name,
-                        alias: 'synapse donor',
+                        alias: 'Donor User',
                         entity_type: 'M',
                         entity_scope: 'Arts & Entertainment',
                         day: birthday.getDay,
@@ -966,13 +1053,14 @@ router.post('/donor/create_account/:id', function(req, res) {
                     function(err, synapse_user) {
                         if (err) {
                             console.log(err);
-
                             res.json({ "success": false, "msg": "Failed Synapse User Create" });
                         } else {
                             console.log(JSON.stringify(synapse_user));
+                            /********** Donor DB Create */
                             var donor = new Donorschema({
-                                id: req.params.id,
+                                id: user.user_id,
                                 email: req.body.email,
+                                phone: req.body.phone,
                                 name: req.body.name,
                                 birthday: req.body.birthday,
                                 address: req.body.address,
@@ -981,8 +1069,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                 zip: req.body.zip,
                                 ssn: req.body.ssn,
                                 synapse_user_id: synapse_user.json._id,
-                                phone: req.body.phone,
-
+                                document_id: synapse_user.json.documents.id
                             })
                             donor.save(function(err) {
                                 if (err) {
@@ -995,8 +1082,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                             res.json({ "success": false, "msg": err.message });
                                         } else {
                                             console.log("Donor Created" + req.params.id);
-                                            console.log(synapse_user.json.permission);
-                                            res.json({ "success": true, "msg": "Successfully created", "permission": synapse_user.json.permission });
+                                            res.json({ "success": true, "msg": "Successfully created" });
                                         }
                                     });
                                 }
@@ -1004,7 +1090,6 @@ router.post('/donor/create_account/:id', function(req, res) {
                         }
                     });
             } else {
-                console.log("Error" + req.params.id);
                 res.json({ "success": false, "msg": "Invalid User ID" });
             }
         });
@@ -1014,240 +1099,215 @@ router.post('/donor/create_account/:id', function(req, res) {
 });
 
 router.post('/donor/bank/:id', function(req, res) {
-    /// get donor db from id params
-    Donorschema.get({ id: req.params.id }, function(err, donor) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!donor) {
-            res.json({ "success": false, "msg": "Invaild User ID" });
-        } else {
-            //// get plaid accunt from publick_token 
-            PUBLIC_TOKEN = req.body.public_token;
-            console.log(PUBLIC_TOKEN);
-            var account_id = req.body.account_id;
-            plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
-                if (error != null) {
-                    console.log(msg + '\n' + error);
-                    return res.json({ "success": false, "msg": "Failed Get Access Token" });
-                }
-                ACCESS_TOKEN = tokenResponse.access_token;
-                ITEM_ID = tokenResponse.item_id;
-                console.log('Access Token: ' + ACCESS_TOKEN);
-                console.log('Item ID: ' + ITEM_ID);
-                plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
+    console.log(req.body);
+    if (req.body.public_token && req.body.account_id && req.body.account_name) {
+        // get donor db from id params
+        Donorschema.get({ id: req.params.id }, function(err, donor) {
+            if (err) {
+                return res.json({ "success": false, "msg": err.message });
+            }
+            if (!donor) {
+                res.json({ "success": false, "msg": "Invaild User ID" });
+            } else {
+                //// get plaid accunt from publick_token 
+                PUBLIC_TOKEN = req.body.public_token;
+                console.log(PUBLIC_TOKEN);
+                var account_id = req.body.account_id;
+                plaid_client.exchangePublicToken(PUBLIC_TOKEN, function(error, tokenResponse) {
                     if (error != null) {
                         console.log(msg + '\n' + error);
-                        return res.json({ "success": false, "msg": "Unable to pull accounts from the Plaid API." });
+                        return res.json({ "success": false, "msg": "Failed Get Access Token" });
                     }
-                    console.log(authResponse.accounts);
-                    var selected_index;
-                    let numbers = authResponse.numbers;
-                    for (var i = 0; i < numbers.length; i++) {
-                        if (numbers[i].account_id === account_id)
-                            selected_index = i;
-                    }
-
-                    var ach_Node = {
-                        type: 'ACH-US',
-                        info: {
-                            nickname: 'Slap Donor Bank',
-                            account_num: numbers[selected_index].account,
-                            routing_num: numbers[selected_index].routing,
-                            type: 'PERSONAL',
-                            class: 'SAVINGS'
-                        },
-                        extra: {
-                            supp_id: donor.id
+                    ACCESS_TOKEN = tokenResponse.access_token;
+                    ITEM_ID = tokenResponse.item_id;
+                    console.log('Access Token: ' + ACCESS_TOKEN);
+                    console.log('Item ID: ' + ITEM_ID);
+                    plaid_client.getAuth(ACCESS_TOKEN, function(error, authResponse) {
+                        if (error != null) {
+                            console.log(msg + '\n' + error);
+                            return res.json({ "success": false, "msg": "Unable to pull accounts from the Plaid API." });
                         }
-                    };
+                        console.log(authResponse.accounts);
+                        var selected_index;
+                        let numbers = authResponse.numbers;
+                        for (var i = 0; i < numbers.length; i++) {
+                            if (numbers[i].account_id === account_id)
+                                selected_index = i;
+                        }
 
-                    ///get synapse useraccount from synapse_user_id  
-                    var node_User;
-                    let options = {
-                        _id: donor.synapse_user_id,
-                        fingerprint: Helpers.fingerprint,
-                        ip_address: '127.0.0.1',
-                        full_dehydrate: 'yes' //optional
-                    };
-                    Users.get(
-                        Helpers.client,
-                        options,
-                        function(errResp, userResponse) {
-                            // error or user object
-                            if (errResp) {
-                                res.json({ "success": false, "msg": "Unable to pull User from the synapse_user_id." });
-                            } else {
-                                node_user = userResponse;
-                                /******************   Node user add */
-                                Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
-                                    if (err) {
-                                        res.json({ "success": true, "msg": "Unable to Create Node." });
-                                    } else {
-                                        console.log('nodesResponse');
-                                        console.log(JSON.stringify(nodesResponse));
-                                        const microPayload = {
-                                            micro: [0.1, 0.1]
-                                        };
+                        let ach_Node = {
+                            type: 'ACH-US',
+                            info: {
+                                nickname: req.body.account_name,
+                                account_num: numbers[selected_index].account,
+                                routing_num: numbers[selected_index].routing,
+                                type: 'PERSONAL',
+                                class: 'SAVINGS'
+                            }
+                        };
 
-                                        var node = nodesResponse[0];
+                        ///get synapse useraccount from synapse_user_id  
+                        var node_User;
+                        let options = {
+                            _id: donor.synapse_user_id,
+                            fingerprint: Helpers.fingerprint,
+                            ip_address: Helpers.getUserIP(),
+                            full_dehydrate: 'yes' //optional
+                        };
+                        Users.get(
+                            Helpers.client,
+                            options,
+                            function(errResp, userResponse) {
+                                // error or user object
+                                if (errResp) {
+                                    res.json({ "success": false, "msg": "Unable to pull User from the synapse_user_id." });
+                                } else {
+                                    node_user = userResponse;
+                                    /******************   Node user add */
+                                    Nodes.create(node_user, ach_Node, function(err, nodesResponse) {
+                                        if (err) {
+                                            res.json({ "success": false, "msg": "Unable to Create Node." });
+                                        } else {
+                                            console.log('nodesResponse');
+                                            console.log(JSON.stringify(nodesResponse));
+                                            /*const microPayload = {
+                                                micro: [0.1, 0.1]
+                                            };
 
-                                        node.update(
-                                            microPayload,
-                                            function(err, nodeResponse) {
-                                                if (err) {
-                                                    console.log("err");
+                                            var node = nodesResponse[0];
+
+                                            node.update(
+                                                microPayload,
+                                                function(err, nodeResponse) {
+                                                    if (err) {
+                                                        console.log("err");
+                                                    }
+                                                    console.log("micro deposits created");
                                                 }
-                                                console.log("micro deposits creted");
-                                            }
-                                        );
-                                        donor.bank_name = nodesResponse[0].json.info.bank_long_name;
-                                        donor.node_id = nodesResponse[0].json._id;
-                                        donor.account_id = account_id;
-                                        donor.access_token = ACCESS_TOKEN;
-                                        donor.save(function(err) {
-                                            if (err) {
-                                                console.log(err);
-                                                return res.json({ "success": false, "msg": err.message });
-                                            }
-                                            Userschema.update({ email: donor.email }, { has_bank: true }, function(err) {
+                                            );*/
+                                            donor.node_id = nodesResponse[0].json._id;
+                                            donor.bank_name = nodesResponse[0].json.info.bank_name;
+                                            donor.access_token = ACCESS_TOKEN;
+                                            donor.account_id = account_id;
+                                            donor.save(function(err) {
                                                 if (err) {
                                                     console.log(err);
                                                     return res.json({ "success": false, "msg": err.message });
                                                 }
-                                                console.log("Added Donor Bank");
-                                                res.json({ "success": true, "msg": "Success" });
-                                            })
-                                        });
-                                    }
-                                });
-                            }
-                        });
+                                                Userschema.update({ email: donor.email }, { has_bank: true }, function(err) {
+                                                    if (err) {
+                                                        console.log(err);
+                                                        return res.json({ "success": false, "msg": err.message });
+                                                    }
+                                                    console.log("Added Donor Bank");
+                                                    res.json({ "success": true, "msg": "Success" });
+                                                })
+                                            });
+                                        }
+                                    });
+                                }
+                            });
+                    });
                 });
-            });
-        }
-    });
-});
-
-router.get('/donor/get_profile/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, user_profile) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!user_profile) {
-            return res.json({ "success": false, "msg": "Invaild User ID" });
-        } else {
-            return res.json({ "success": false, "msg": "success", "user": user_profile });
-        }
-    });
-});
-
-router.post('/donor/update_profile/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, user_profile) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!user_profile) {
-            return res.json({ "success": false, "msg": "Invaild User ID" });
-        } else {
-            user_profile.adress = req.body.address;
-            user_profile.name = req.body.name;
-            user_profile.birthday = req.body.birthday;
-            user_profile.state = req.body.state;
-            user_profile.phone = req.body.phone;
-            user_profile.save(function(err) {
-                if (err) {
-                    return res.json({ "success": false, "msg": err.message });
-                }
-                return res.json({ "success": true, "msg": "success" });
-            });
-        }
-    });
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.post('/donor/add_recipient/:id', function(req, res) {
-    Userschema.get({ email: req.body.email }, function(err, user) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!user) {
-            return res.json({ "success": false, "msg": "No Registed Recipient" });
-        }
-        Recipientschema.get({ id: user.user_id }, function(err, recipient) {
+    console.log(req.body);
+    if (req.body.name && req.body.email && req.body.payment) {
+        Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
                 return res.json({ "success": false, "msg": err.message });
             }
-            if (!recipient) {
+            if (!user) {
                 return res.json({ "success": false, "msg": "No Registed Recipient" });
             }
-            var connected = false;
-            if (!recipient.donors) {
-                return res.json({ "success": false, "msg": "No Register Donor" });
-            }
-            Donorschema.get({ id: req.params.id }, function(err, donor) {
+            Recipientschema.get({ id: user.user_id }, function(err, recipient) {
                 if (err) {
                     return res.json({ "success": false, "msg": err.message });
                 }
-                if (!donor) {
-                    return res.json({ "success": false, "msg": "Invalid User ID" });
+                if (!recipient) {
+                    return res.json({ "success": false, "msg": "No Registed Recipient" });
                 }
-                var recipients = [];
-                if (donor.recipients) {
-                    recipients = donor.recipients;
+                var connected = false;
+                if (!recipient.donors) {
+                    return res.json({ "success": false, "msg": "No Register Donor" });
                 }
-                for (var i = 0; i < recipient.donors.length; i++) {
-                    if (recipient.donors[i].email == donor.email) {
-                        connected = true;
-                        recipient.donors[i].connected = true;
-                        break;
+                Donorschema.get({ id: req.params.id }, function(err, donor) {
+                    if (err) {
+                        return res.json({ "success": false, "msg": err.message });
                     }
-                }
-                if (connected) {
-                    var new_recipient = { "email": req.body.email, "name": req.body.name, "count": 0, balance: 0, next: req.body.payment };
-                    recipients.push(new_recipient);
-                    donor.recipients = recipients;
-                    donor.save(function(err) {
-                        if (err) {
-                            return res.json({ "success": false, "msg": err.message });
+                    if (!donor) {
+                        return res.json({ "success": false, "msg": "Invalid User ID" });
+                    }
+                    var recipients = [];
+                    if (donor.recipients) {
+                        recipients = donor.recipients;
+                    }
+                    for (var i = 0; i < recipient.donors.length; i++) {
+                        if (recipient.donors[i].email == donor.email) {
+                            connected = true;
+                            recipient.donors[i].connected = true;
+                            break;
                         }
-                        recipient.save(function(err) {
+                    }
+                    if (connected) {
+                        var new_recipient = { "email": req.body.email, "name": req.body.name, "count": 0, balance: 0, next: req.body.payment };
+                        recipients.push(new_recipient);
+                        donor.recipients = recipients;
+                        donor.save(function(err) {
                             if (err) {
                                 return res.json({ "success": false, "msg": err.message });
                             }
-                            res.json({ "success": true, "msg": "Success" });
+                            recipient.save(function(err) {
+                                if (err) {
+                                    return res.json({ "success": false, "msg": err.message });
+                                }
+                                res.json({ "success": true, "msg": "Success" });
+                            });
                         });
-                    });
-                } else {
-                    return res.json({ "success": false, "msg": "No Register Donor" });
-                }
+                    } else {
+                        return res.json({ "success": false, "msg": "No Register Donor" });
+                    }
+                });
             });
         });
-    });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.post('/donor/change_next_payment/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!donor) {
-            return res.json({ "success": false, "msg": "Invalid User ID" });
-        } else {
-            for (var i = 0; i < donor.recipients.length; i++) {
-                if (donor.recipients[i].email == req.body.email) {
-                    donor.recipients[i].next = req.body.next;
-                    break;
-                }
+    console.log(req.body);
+    if (req.body.email && req.body.next) {
+        Donorschema.get({ id: req.params.id }, function(err, donor) {
+            if (err) {
+                return res.json({ "success": false, "msg": err.message });
             }
-            donor.save(function(err) {
-                if (err) {
-                    return res.json({ "success": false, "msg": err.message });
+            if (!donor) {
+                return res.json({ "success": false, "msg": "Invalid User ID" });
+            } else {
+                for (var i = 0; i < donor.recipients.length; i++) {
+                    if (donor.recipients[i].email == req.body.email) {
+                        donor.recipients[i].next = req.body.next;
+                        break;
+                    }
                 }
-                return res.json({ "success": true, "msg": "success" });
-            })
-
-        }
-    });
+                donor.save(function(err) {
+                    if (err) {
+                        return res.json({ "success": false, "msg": err.message });
+                    }
+                    return res.json({ "success": true, "msg": "success" });
+                })
+            }
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
 
 router.get('/donor/get_recipients/:id', function(req, res) {
@@ -1264,151 +1324,54 @@ router.get('/donor/get_recipients/:id', function(req, res) {
 });
 
 router.post('/donor/remove_recipient/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!donor) {
-            return res.json({ "success": false, "msg": "Invalid User ID" });
-        }
-        for (var i = 0; i < donor.recipients.length; i++) {
-            if (donor.recipients[i].email == req.body.email) {
-                donor.recipients.splice(i, 1);
-                break;
-            }
-        }
-        donor.save(function(err) {
+    console.log(req.body);
+    if (req.body.email) {
+        Donorschema.get({ id: req.params.id }, function(err, donor) {
             if (err) {
                 return res.json({ "success": false, "msg": err.message });
             }
-            Userschema.get({ email: req.body.email }, function(err, user) {
+            if (!donor) {
+                return res.json({ "success": false, "msg": "Invalid User ID" });
+            }
+            for (var i = 0; i < donor.recipients.length; i++) {
+                if (donor.recipients[i].email == req.body.email) {
+                    donor.recipients.splice(i, 1);
+                    break;
+                }
+            }
+            donor.save(function(err) {
                 if (err) {
                     return res.json({ "success": false, "msg": err.message });
                 }
-                if (!user) {
-                    return res.json({ "success": false, "msg": "No Registed user" });
-                }
-                Recipientschema.get({ id: user.user_id }, function(err, recipient) {
-                    for (var i = 0; i < recipient.donors.length; i++) {
-                        if (recipient.donors[i].email == donor.email) {
-                            recipient.donors[i].connected = false;
-                            console.log("removed");
-                            break;
-                        }
+                Userschema.get({ email: req.body.email }, function(err, user) {
+                    if (err) {
+                        return res.json({ "success": false, "msg": err.message });
                     }
-                    console.log(donor.email + req.body.email);
-                    recipient.save(function(err) {
-                        if (err) {
-                            return res.json({ "success": false, "msg": err.message });
+                    if (!user) {
+                        return res.json({ "success": false, "msg": "No Registed user" });
+                    }
+                    Recipientschema.get({ id: user.user_id }, function(err, recipient) {
+                        for (var i = 0; i < recipient.donors.length; i++) {
+                            if (recipient.donors[i].email == donor.email) {
+                                recipient.donors[i].connected = false;
+                                console.log("removed");
+                                break;
+                            }
                         }
-                        return res.json({ "success": true, "msg": "Success" });
+                        console.log(donor.email + req.body.email);
+                        recipient.save(function(err) {
+                            if (err) {
+                                return res.json({ "success": false, "msg": err.message });
+                            }
+                            return res.json({ "success": true, "msg": "Success" });
+                        })
                     })
                 })
             })
-        })
-    });
+        });
+    } else {
+        res.json({ "success": false, "msg": "Invalid Parameter" });
+    }
 });
-
-router.post('/donor/get_balances/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!donor) {
-            return res.json({ "success": false, "msg": "Invalid User ID" });
-        }
-        return res.json({ "success": true, "msg": "Success", "next_payment": donor.next_payment, "recipients": donor.next_payment });
-    });
-});
-
-
-router.post('/transactions/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor_user) {
-        if (err) {
-            res.json({ "success": false, "msg": "Error" });
-        } else {
-            var createPayload = {
-                to: {
-                    type: 'ACH-US',
-                    id: req.body.to_node_id
-                },
-                amount: {
-                    amount: 10,
-                    currency: 'USD'
-                },
-                extra: {
-                    note: 'Deposit to synapse account',
-                    ip: '192.168.0.1'
-                }
-            };
-
-            var testUser;
-            var testNode;
-            Users.get(
-                Helpers.client, {
-                    ip_address: Helpers.ip_address,
-                    fingerprint: Helpers.fingerprint,
-                    _id: donor_user.synapse_user_id
-                },
-                function(err, user) {
-                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                    testUser = user;
-                    Nodes.get(
-                        testUser, {
-                            _id: donor_user.node_id
-                        },
-                        function(err, node) {
-                            if (err) { return res.json({ "success": false, "msg": err.message }); }
-                            testNode = node;
-                            console.log(testNode);
-                            Transactions.create(
-                                testNode,
-                                createPayload,
-                                function(err, transaction) {
-                                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                    res.json({ "success": true, "transaction": transaction });
-                                }
-                            );
-                        }
-                    );
-                });
-        }
-    });
-});
-
-router.post('/add_document/:id', function(req, res) {
-    const addDocsPayload = {
-        documents: [{
-            email: 'donor1@mail.com',
-            phone_number: '9107952280',
-            ip: Helpers.getUserIP(),
-            name: 'Donor donor',
-            alias: 'Woof Woof',
-            entity_type: 'M',
-            entity_scope: 'Arts & Entertainment',
-            day: 29,
-            month: 3,
-            year: 1985,
-            address_street: '201 n front street',
-            address_city: 'Wilmington',
-            address_subdivision: 'CA',
-            address_postal_code: '28401',
-            address_country_code: 'US',
-            virtual_docs: [{
-                document_value: '2222',
-                document_type: 'SSN'
-            }]
-        }]
-    };
-
-    user.addDocuments(
-        addDocsPayload,
-        function(err, userResponse) {
-            // error or user object
-            user = userResponse;
-        }
-    );
-
-})
 
 module.exports = router;

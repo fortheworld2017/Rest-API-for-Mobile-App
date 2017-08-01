@@ -36,16 +36,16 @@ var donorSchema = new Schema({
     zip: {
         type: String
     },
+    ssn: {
+        type: String
+    },
     synapse_user_id: {
         type: String
     },
+    document_id: {
+        type: String
+    },
     bank_name: {
-        type: String
-    },
-    subaccount_id: {
-        type: String
-    },
-    ssn: {
         type: String
     },
     node_id: {
@@ -55,6 +55,9 @@ var donorSchema = new Schema({
         type: String
     },
     access_token: {
+        type: String
+    },
+    internal_node_id: {
         type: String
     },
     next_payment: {
