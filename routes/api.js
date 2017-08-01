@@ -367,7 +367,9 @@ router.post('/transactions/:id', function(req, res) {
                                                             createPayload,
                                                             function(err, transaction) {
                                                                 if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                                                res.json({ "success": true, "transaction": transaction });
+                                                                if (i == donor_user.recipients.length) {
+                                                                    res.json({ "success": true, "transaction": transaction });
+                                                                }
                                                             }
                                                         );
                                                     }
