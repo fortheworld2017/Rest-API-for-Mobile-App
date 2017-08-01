@@ -311,54 +311,74 @@ router.post('/transactions/:id', function(req, res) {
         if (err) {
             res.json({ "success": false, "msg": "Error" });
         } else {
-            for (var i = 0; i < donor_user.recipients; i++) {
-
-                var createPayload = {
-                    to: {
-                        type: 'ACH-US',
-                        id: req.body.to_node_id
-                    },
-                    amount: {
-                        amount: 10,
-                        currency: 'USD'
-                    },
-                    extra: {
-                        note: 'Deposit to synapse account',
-                        ip: Helpers.ip_address
+            for (var i = 0; i < donor_user.recipients.length; i++) {
+                Userschema.get({ email: donor_user.recipients[i].email }, function(err, user) {
+                    if (err) {
+                        return res.json({ "success": false, "msg": err.message });
                     }
-                };
-
-                var testUser;
-                var testNode;
-                Users.get(
-                    Helpers.client, {
-                        ip_address: Helpers.ip_address,
-                        fingerprint: Helpers.fingerprint,
-                        _id: donor_user.synapse_user_id
-                    },
-                    function(err, user) {
-                        if (err) { return res.json({ "success": false, "msg": err.message }); }
-                        testUser = user;
-                        Nodes.get(
-                            testUser, {
-                                _id: donor_user.node_id
-                            },
-                            function(err, node) {
-                                if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                testNode = node;
-                                console.log(testNode);
-                                Transactions.create(
-                                    testNode,
-                                    createPayload,
-                                    function(err, transaction) {
-                                        if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                        res.json({ "success": true, "transaction": transaction });
-                                    }
-                                );
+                    if (!user) {
+                        return res.json({ "success": false, "msg": "Invaild User ID" });
+                    } else {
+                        Recipientschema.get({ id: user.user_id }, function(err, recipient) {
+                            if (err) {
+                                return res.json({ "success": false, "msg": err.message });
                             }
-                        );
-                    });
+                            if (!user) {
+                                return res.json({ "success": false, "msg": "Invaild User ID" });
+                            } else {
+                                for (var j = 0; j < recipient.donors.length; j++) {
+                                    if (recipient.donors[j].email == donor_user.email) {
+                                        var createPayload = {
+                                            to: {
+                                                type: 'ACH-US',
+                                                id: recipient.donors[j].loan
+                                            },
+                                            amount: {
+                                                amount: 10,
+                                                currency: 'USD'
+                                            },
+                                            extra: {
+                                                note: 'Deposit from  ' + donor_user.name + ' to  ' + recipient.name,
+                                                ip: Helpers.ip_address
+                                            }
+                                        };
 
+                                        var testUser;
+                                        var testNode;
+                                        Users.get(
+                                            Helpers.client, {
+                                                ip_address: Helpers.ip_address,
+                                                fingerprint: Helpers.fingerprint,
+                                                _id: donor_user.synapse_user_id
+                                            },
+                                            function(err, user) {
+                                                if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                                testUser = user;
+                                                Nodes.get(
+                                                    testUser, {
+                                                        _id: donor_user.node_id
+                                                    },
+                                                    function(err, node) {
+                                                        if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                                        testNode = node;
+                                                        console.log(testNode);
+                                                        Transactions.create(
+                                                            testNode,
+                                                            createPayload,
+                                                            function(err, transaction) {
+                                                                if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                                                res.json({ "success": true, "transaction": transaction });
+                                                            }
+                                                        );
+                                                    }
+                                                );
+                                            });
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
             }
 
         }
