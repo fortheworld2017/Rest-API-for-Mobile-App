@@ -1305,7 +1305,7 @@ router.post('/transactions/:id', function(req, res) {
                 },
                 extra: {
                     note: 'Deposit to synapse account',
-                    ip: '192.168.0.1'
+                    ip: Helpers.ip_address
                 }
             };
 
@@ -1339,8 +1339,6 @@ router.post('/transactions/:id', function(req, res) {
                         }
                     );
                 });
-
-
         }
     });
 });
