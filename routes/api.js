@@ -311,51 +311,56 @@ router.post('/transactions/:id', function(req, res) {
         if (err) {
             res.json({ "success": false, "msg": "Error" });
         } else {
-            var createPayload = {
-                to: {
-                    type: 'ACH-US',
-                    id: req.body.to_node_id
-                },
-                amount: {
-                    amount: 10,
-                    currency: 'USD'
-                },
-                extra: {
-                    note: 'Deposit to synapse account',
-                    ip: Helpers.ip_address
-                }
-            };
+            for (var i = 0; i < donor_user.recipients; i++) {
 
-            var testUser;
-            var testNode;
-            Users.get(
-                Helpers.client, {
-                    ip_address: Helpers.ip_address,
-                    fingerprint: Helpers.fingerprint,
-                    _id: donor_user.synapse_user_id
-                },
-                function(err, user) {
-                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                    testUser = user;
-                    Nodes.get(
-                        testUser, {
-                            _id: donor_user.node_id
-                        },
-                        function(err, node) {
-                            if (err) { return res.json({ "success": false, "msg": err.message }); }
-                            testNode = node;
-                            console.log(testNode);
-                            Transactions.create(
-                                testNode,
-                                createPayload,
-                                function(err, transaction) {
-                                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                    res.json({ "success": true, "transaction": transaction });
-                                }
-                            );
-                        }
-                    );
-                });
+                var createPayload = {
+                    to: {
+                        type: 'ACH-US',
+                        id: req.body.to_node_id
+                    },
+                    amount: {
+                        amount: 10,
+                        currency: 'USD'
+                    },
+                    extra: {
+                        note: 'Deposit to synapse account',
+                        ip: Helpers.ip_address
+                    }
+                };
+
+                var testUser;
+                var testNode;
+                Users.get(
+                    Helpers.client, {
+                        ip_address: Helpers.ip_address,
+                        fingerprint: Helpers.fingerprint,
+                        _id: donor_user.synapse_user_id
+                    },
+                    function(err, user) {
+                        if (err) { return res.json({ "success": false, "msg": err.message }); }
+                        testUser = user;
+                        Nodes.get(
+                            testUser, {
+                                _id: donor_user.node_id
+                            },
+                            function(err, node) {
+                                if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                testNode = node;
+                                console.log(testNode);
+                                Transactions.create(
+                                    testNode,
+                                    createPayload,
+                                    function(err, transaction) {
+                                        if (err) { return res.json({ "success": false, "msg": err.message }); }
+                                        res.json({ "success": true, "transaction": transaction });
+                                    }
+                                );
+                            }
+                        );
+                    });
+
+            }
+
         }
     });
 });
@@ -1368,82 +1373,10 @@ router.post('/donor/remove_recipient/:id', function(req, res) {
                     })
                 })
             })
-<<<<<<< HEAD
-        })
-    });
-});
-
-router.post('/donor/get_balances/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor) {
-        if (err) {
-            return res.json({ "success": false, "msg": err.message });
-        }
-        if (!donor) {
-            return res.json({ "success": false, "msg": "Invalid User ID" });
-        }
-        return res.json({ "success": true, "msg": "Success", "next_payment": donor.next_payment, "recipients": donor.next_payment });
-    });
-});
-
-
-router.post('/transactions/:id', function(req, res) {
-    Donorschema.get({ id: req.params.id }, function(err, donor_user) {
-        if (err) {
-            res.json({ "success": false, "msg": "Error" });
-        } else {
-            var createPayload = {
-                to: {
-                    type: 'ACH-US',
-                    id: req.body.to_node_id
-                },
-                amount: {
-                    amount: 10,
-                    currency: 'USD'
-                },
-                extra: {
-                    note: 'Deposit to synapse account',
-                    ip: Helpers.ip_address
-                }
-            };
-
-            var testUser;
-            var testNode;
-            Users.get(
-                Helpers.client, {
-                    ip_address: Helpers.ip_address,
-                    fingerprint: Helpers.fingerprint,
-                    _id: donor_user.synapse_user_id
-                },
-                function(err, user) {
-                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                    testUser = user;
-                    Nodes.get(
-                        testUser, {
-                            _id: donor_user.node_id
-                        },
-                        function(err, node) {
-                            if (err) { return res.json({ "success": false, "msg": err.message }); }
-                            testNode = node;
-                            console.log(testNode);
-                            Transactions.create(
-                                testNode,
-                                createPayload,
-                                function(err, transaction) {
-                                    if (err) { return res.json({ "success": false, "msg": err.message }); }
-                                    res.json({ "success": true, "transaction": transaction });
-                                }
-                            );
-                        }
-                    );
-                });
-        }
-    });
-=======
         });
     } else {
         res.json({ "success": false, "msg": "Invalid Parameter" });
     }
->>>>>>> 364824f32641edbf19b6e67759b4e7bf84d39b4e
 });
 
 module.exports = router;
