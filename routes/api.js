@@ -245,6 +245,41 @@ router.post('/profile/:id', function(req, res) {
 
 });
 
+router.post('/add_document/:id', function(req, res) {
+    const addDocsPayload = {
+        documents: [{
+            email: 'donor1@mail.com',
+            phone_number: '9107952280',
+            ip: Helpers.getUserIP(),
+            name: 'Donor donor',
+            alias: 'Woof Woof',
+            entity_type: 'M',
+            entity_scope: 'Arts & Entertainment',
+            day: 29,
+            month: 3,
+            year: 1985,
+            address_street: '201 n front street',
+            address_city: 'Wilmington',
+            address_subdivision: 'CA',
+            address_postal_code: '28401',
+            address_country_code: 'US',
+            virtual_docs: [{
+                document_value: '2222',
+                document_type: 'SSN'
+            }]
+        }]
+    };
+
+    user.addDocuments(
+        addDocsPayload,
+        function(err, userResponse) {
+            // error or user object
+            user = userResponse;
+        }
+    );
+
+})
+
 router.get('/', function(req, res) {
     res.json({ 'result': 'API RUNNING' });
 });
@@ -307,9 +342,8 @@ router.post('/recipient/signup', function(req, res) {
 
 router.post('/recipient/create_account/:id', function(req, res) {
     console.log(req.body);
-    var birthday = req.body.birthday;
-    var arr_birthday = birthday.splice("-");
     if (req.body.email && req.body.name) {
+        var birthday = new Date(req.body.birthday);
         Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
                 return res.json({ "success": false, "msg": err.message });
@@ -342,9 +376,9 @@ router.post('/recipient/create_account/:id', function(req, res) {
                         alias: 'synapse recipient',
                         entity_type: 'M',
                         entity_scope: 'Arts & Entertainment',
-                        day: arr_birthday[0],
-                        month: arr_birthday[1],
-                        year: arr_birthday[2],
+                        day: birthday.getDay,
+                        month: birthday.getMonth,
+                        year: birthday.getFullYear,
                         address_street: req.body.address,
                         address_city: req.body.city,
                         address_subdivision: req.body.state,
@@ -386,7 +420,6 @@ router.post('/recipient/create_account/:id', function(req, res) {
                                 state: req.body.state,
                                 zip: req.body.zip,
                                 ssn: req.body.ssn,
-                                subaccount_id: nodeResponse[0].json._id,
                                 synapse_user_id: synapse_user.json._id
                             })
                             recipient.save(function(err) {
@@ -870,10 +903,8 @@ router.post('/donor/signup', function(req, res) {
 
 router.post('/donor/create_account/:id', function(req, res) {
     console.log(req.body);
-
     if (req.body.email && req.body.name) {
-        var birthday = req.body.birthday;
-        var arr_birthday = birthday.splice("-");
+        var birthday = new Date(req.body.birthday);
         Userschema.get({ email: req.body.email }, function(err, user) {
             if (err) {
                 return res.json({ "success": false, "msg": err.message });
@@ -906,9 +937,9 @@ router.post('/donor/create_account/:id', function(req, res) {
                         alias: 'synapse donor',
                         entity_type: 'M',
                         entity_scope: 'Arts & Entertainment',
-                        day: arr_birthday[0],
-                        month: arr_birthday[1],
-                        year: arr_birthday[2],
+                        day: birthday.getDay,
+                        month: birthday.getMonth,
+                        year: birthday.getFullYear,
                         address_street: req.body.address,
                         address_city: req.body.city,
                         address_subdivision: req.body.state,
@@ -924,6 +955,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                             document_type: 'GOVT_ID'
                         }]
                     }]
+
                 };
                 /******************* Synapse User create */
                 Users.create(
@@ -934,6 +966,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                     function(err, synapse_user) {
                         if (err) {
                             console.log(err);
+
                             res.json({ "success": false, "msg": "Failed Synapse User Create" });
                         } else {
                             console.log(JSON.stringify(synapse_user));
@@ -947,7 +980,6 @@ router.post('/donor/create_account/:id', function(req, res) {
                                 state: req.body.state,
                                 zip: req.body.zip,
                                 ssn: req.body.ssn,
-                                subaccount_id: nodeResponse[0].json._id,
                                 synapse_user_id: synapse_user.json._id,
                                 phone: req.body.phone,
 
@@ -963,6 +995,7 @@ router.post('/donor/create_account/:id', function(req, res) {
                                             res.json({ "success": false, "msg": err.message });
                                         } else {
                                             console.log("Donor Created" + req.params.id);
+                                            console.log(synapse_user.json.permission);
                                             res.json({ "success": true, "msg": "Successfully created", "permission": synapse_user.json.permission });
                                         }
                                     });
@@ -1339,8 +1372,6 @@ router.post('/transactions/:id', function(req, res) {
                         }
                     );
                 });
-
-
         }
     });
 });
