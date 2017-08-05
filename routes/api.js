@@ -1402,3 +1402,10 @@ router.post('/donor/remove_recipient/:id', function(req, res) {
 });
 
 module.exports = router;
+
+function intervalFunc() {
+    var time_date = new Date();
+    console.log('Cant stop me now!' + time_date.getHours() + '/' + time_date.getMinutes() + '/' + time_date.getSeconds());
+}
+
+setInterval(intervalFunc, 50000);
